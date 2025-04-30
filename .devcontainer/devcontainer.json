@@ -1,6 +1,6 @@
 {
-    "name": "Python Dev Container",
-    "image": "mcr.microsoft.com/devcontainers/python:3.10", 
+    "name": "Fast Python Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/python:3.10",
     "postCreateCommand": "pip install -e . && pip install jupyterlab",
     "customizations": {
       "vscode": {
@@ -8,11 +8,6 @@
           "ms-python.python",
           "ms-toolsai.jupyter"
         ]
-      }
-    },
-    "features": {
-      "ghcr.io/devcontainers/features/python:1": {
-        "version": "3.10"
       }
     }
   }
