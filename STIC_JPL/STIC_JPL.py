@@ -33,3 +33,5 @@ from .root_zone_initialization import calculate_root_zone_moisture
 from .soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from .model import STIC_JPL
+from .generate_STIC_inputs import generate_STIC_inputs
+from .process_STIC_table import process_STIC_table

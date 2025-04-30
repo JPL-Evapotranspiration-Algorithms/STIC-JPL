@@ -24,6 +24,7 @@ dependencies = [
     "numpy",
     "pandas",
     "rasters",
+    "SEBAL-soil-heat-flux",
     "solar-apparent-time"
 ]
 requires-python = ">=3.10"
