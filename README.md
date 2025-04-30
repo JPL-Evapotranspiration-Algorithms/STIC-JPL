@@ -1,4 +1,5 @@
-# Surface Temperature Initiated Closure (STIC) Evapotranspiration Model Python Implementation
+# `STIC-JPL` 
+## Surface Temperature Initiated Closure (STIC) Evapotranspiration Model Python Implementation
 
 [![CI](https://github.com/JPL-Evapotranspiration-Algorithms/STIC/actions/workflows/ci.yml/badge.svg)](https://github.com/JPL-Evapotranspiration-Algorithms/STIC/actions/workflows/ci.yml)
 
@@ -37,21 +38,23 @@ NASA Jet Propulsion Laboratory 329G
 
 ## Installation
 
-Use the pip package manager to install the `STIC` PyPi package.
+Use the pip package manager to install the `STIC-JPL` PyPi package with dashes in the name.
 
 ```
-pip install STIC
+pip install STIC-JPL
 ```
 
 ## Usage
 
-Import the `STIC` function from the `STIC` package.
+Import the `STIC_JPL` function from the `STIC_JPL` package with underscores in the name.
 
 ```
-from STIC import STIC
+from STIC_JPL import STIC_JPL
 ```
 
-See the [ECOSTRESS example](ECOSTRESS%20Example.ipynb) for usage.
+See the [ECOSTRESS example](ECOSTRESS%20Example.ipynb) notebook for usage.
+
+See the [STIC sensitivity](STIC%20Sensitivity.ipynb) notebook for sensitivity analysis.
 
 ## References
  

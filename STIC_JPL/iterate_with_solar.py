@@ -5,7 +5,7 @@ import rasters as rt
 
 from rasters import Raster
 
-from .soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from .constants import *
 from .canopy_air_stream import calculate_canopy_air_stream_vapor_pressure

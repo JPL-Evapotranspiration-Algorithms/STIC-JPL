@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name = "STIC-JPL"
-version = "1.1.0"
+version = "1.2.1"
 description = "Surface Temperature Initiated Closure (STIC) Evapotranspiration Model Python Implementation"
 readme = "README.md"
 authors = [
@@ -18,13 +18,18 @@ classifiers = [
 ]
 dependencies = [
     "colored-logging",
-    "ECOv002-CMR",
-    "ECOv002-granules",
+    "ECOv002-CMR>=1.0.5",
+    "ECOv002-granules>=1.0.3",
+    "ECOv003-granules",
     "GEOS5FP>=1.1.1",
+    "monte-carlo-sensitivity",
     "numpy",
     "pandas",
-    "rasters",
-    "solar-apparent-time"
+    "rasters>=1.4.6",
+    "seaborn",
+    "SEBAL-soil-heat-flux",
+    "solar-apparent-time",
+    "verma-net-radiation>=1.1.0"
 ]
 requires-python = ">=3.10"
 
