@@ -5,8 +5,7 @@ import rasters as rt
 
 from rasters import Raster
 
-from .vegetation_conversion.vegetation_conversion import FVC_from_NDVI
-from .soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from .constants import *
 from .soil_moisture_initialization import initialize_soil_moisture

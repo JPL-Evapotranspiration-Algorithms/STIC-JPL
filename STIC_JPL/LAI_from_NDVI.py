@@ -9,22 +9,6 @@ MAX_FIPAR = 1.0
 MIN_LAI = 0.0
 MAX_LAI = 10.0
 
-def FVC_from_NDVI(NDVI: Union[Raster, np.ndarray]) -> Union[Raster, np.ndarray]:
-    """
-    Convert Normalized Difference Vegetation Index (NDVI) to Fractional Vegetation Cover (FVC).
-
-    Parameters:
-        NDVI (Union[Raster, np.ndarray]): Input NDVI data.
-
-    Returns:
-        Union[Raster, np.ndarray]: Converted FVC data.
-    """
-    NDVIv = 0.52  # +- 0.03
-    NDVIs = 0.04  # +- 0.03
-    FVC = rt.clip((NDVI - NDVIs) / (NDVIv - NDVIs), 0.0, 1.0)
-
-    return FVC
-
 def LAI_from_NDVI(
         NDVI: Union[Raster, np.ndarray],
         min_fIPAR: float = MIN_FIPAR,

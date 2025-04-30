@@ -7,16 +7,12 @@ import numpy as np
 import warnings
 from .diagnostic import diagnostic
 import colored_logging as cl
-from .meteorology_conversion import calculate_air_density, calculate_specific_heat, calculate_specific_humidity, calculate_surface_pressure, celcius_to_kelvin
 import rasters as rt
 from GEOS5FP import GEOS5FP
 from solar_apparent_time import solar_day_of_year_for_area, solar_hour_of_day_for_area
-
-from .timer import Timer
+from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from rasters import Raster, RasterGeometry
-
-from .vegetation_conversion.vegetation_conversion import FVC_from_NDVI, LAI_from_NDVI
 
 from .constants import *
 from .closure import STIC_closure
@@ -29,8 +25,11 @@ from .initialize_without_solar import initialize_without_solar
 from .iterate_with_solar import iterate_with_solar
 from .iterate_without_solar import iterate_without_solar
 from .root_zone_initialization import calculate_root_zone_moisture
+from .FVC_from_NDVI import FVC_from_NDVI
+from .LAI_from_NDVI import LAI_from_NDVI
+from .celcius_to_kelvin import celcius_to_kelvin
 
-from .soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from .timer import Timer
 
 __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
 

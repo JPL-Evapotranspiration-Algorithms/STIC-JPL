@@ -4,7 +4,8 @@ import numpy as np
 import rasters as rt
 from rasters import Raster
 
-from .vegetation_conversion.vegetation_conversion import FVC_from_NDVI
+from .FVC_from_NDVI import FVC_from_NDVI
+from .LAI_from_NDVI import LAI_from_NDVI
 
 from .constants import GAMMA_HPA
 from .root_zone_initialization import calculate_root_zone_moisture
