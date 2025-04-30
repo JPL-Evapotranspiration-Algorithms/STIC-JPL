@@ -1,0 +1,7 @@
+{
+    "folders": [{ "path": "." }],
+    "settings": {
+      "python.defaultInterpreterPath": "/usr/local/bin/python",
+      "jupyter.notebookFileRoot": "${workspaceFolder}/notebooks"
+    }
+  }
