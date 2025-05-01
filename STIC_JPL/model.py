@@ -5,7 +5,7 @@ from os.path import join, abspath, expanduser
 from typing import Dict, List
 import numpy as np
 import warnings
-from .diagnostic import diagnostic
+
 import colored_logging as cl
 import rasters as rt
 from GEOS5FP import GEOS5FP
@@ -28,7 +28,7 @@ from .root_zone_initialization import calculate_root_zone_moisture
 from .FVC_from_NDVI import FVC_from_NDVI
 from .LAI_from_NDVI import LAI_from_NDVI
 from .celcius_to_kelvin import celcius_to_kelvin
-
+from .diagnostic import diagnostic
 from .timer import Timer
 
 __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
