@@ -26,6 +26,7 @@ dependencies = [
     "monte-carlo-sensitivity",
     "numpy",
     "pandas",
+    "pytictoc",
     "rasters>=1.4.6",
     "seaborn",
     "SEBAL-soil-heat-flux",

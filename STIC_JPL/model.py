@@ -6,6 +6,8 @@ from typing import Dict, List
 import numpy as np
 import warnings
 
+from pytictoc import TicToc
+
 import colored_logging as cl
 from check_distribution import check_distribution
 import rasters as rt
@@ -29,7 +31,6 @@ from .root_zone_initialization import calculate_root_zone_moisture
 from .FVC_from_NDVI import FVC_from_NDVI
 from .LAI_from_NDVI import LAI_from_NDVI
 from .celcius_to_kelvin import celcius_to_kelvin
-from .timer import Timer
 
 __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
 
@@ -227,7 +228,9 @@ def STIC_JPL(
     PT_Wm2 = None
     iteration = 1
     LE_Wm2_max_change = 0
-    t = Timer()
+
+    t = TicToc()
+    t.tic()
 
     while (np.nanmax(LE_Wm2_change) >= LE_convergence_target and iteration <= max_iterations):
         logger.info(f"running STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)}")
@@ -330,7 +333,7 @@ def STIC_JPL(
         LE_Wm2_old = LE_Wm2_new
         LE_Wm2_max_change = np.nanmax(LE_Wm2_change)
         logger.info(
-            f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t} seconds)")
+            f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t.tocvalue()} seconds)")
         
         check_distribution(SM, f"SM_{iteration}")
         check_distribution(G, f"G_{iteration}")
