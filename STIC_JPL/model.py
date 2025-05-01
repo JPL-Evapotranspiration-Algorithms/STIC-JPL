@@ -5,8 +5,11 @@ from os.path import join, abspath, expanduser
 from typing import Dict, List
 import numpy as np
 import warnings
-from .diagnostic import diagnostic
+
+from pytictoc import TicToc
+
 import colored_logging as cl
+from check_distribution import check_distribution
 import rasters as rt
 from GEOS5FP import GEOS5FP
 from solar_apparent_time import solar_day_of_year_for_area, solar_hour_of_day_for_area
@@ -28,8 +31,6 @@ from .root_zone_initialization import calculate_root_zone_moisture
 from .FVC_from_NDVI import FVC_from_NDVI
 from .LAI_from_NDVI import LAI_from_NDVI
 from .celcius_to_kelvin import celcius_to_kelvin
-
-from .timer import Timer
 
 __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
 
@@ -180,7 +181,7 @@ def STIC_JPL(
             G_method = DEFAULT_G_METHOD,  # method for calculating soil heat flux
         )
     
-    diagnostic(Ms, "Ms", **diag_kwargs)
+    check_distribution(Ms, "Ms")
 
     # STIC analytical equations (convergence on LE)
     gB_ms, gS_ms, dT_C, EF = STIC_closure(
@@ -227,7 +228,9 @@ def STIC_JPL(
     PT_Wm2 = None
     iteration = 1
     LE_Wm2_max_change = 0
-    t = Timer()
+
+    t = TicToc()
+    t.tic()
 
     while (np.nanmax(LE_Wm2_change) >= LE_convergence_target and iteration <= max_iterations):
         logger.info(f"running STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)}")
@@ -330,11 +333,11 @@ def STIC_JPL(
         LE_Wm2_old = LE_Wm2_new
         LE_Wm2_max_change = np.nanmax(LE_Wm2_change)
         logger.info(
-            f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t} seconds)")
+            f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t.tocvalue()} seconds)")
         
-        diagnostic(SM, f"SM_{iteration}", **diag_kwargs)
-        diagnostic(G, f"G_{iteration}", **diag_kwargs)
-        diagnostic(LE_Wm2_new, f"LE_{iteration}", **diag_kwargs)
+        check_distribution(SM, f"SM_{iteration}")
+        check_distribution(G, f"G_{iteration}")
+        check_distribution(LE_Wm2_new, f"LE_{iteration}")
 
         if LE_Wm2_max_change <= LE_convergence_target:
             logger.info(f"max LE change {cl.val(np.round(LE_Wm2_max_change, 3))} within convergence target {cl.val(np.round(LE_convergence_target, 3))} with {cl.val(iteration)} iteration{'s' if iteration > 1 else ''}")
