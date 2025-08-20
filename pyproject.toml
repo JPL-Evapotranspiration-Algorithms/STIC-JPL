@@ -48,9 +48,8 @@ dev = [
 [tool.setuptools.package-data]
 STIC_JPL = ["*.txt"]
 
+[tool.setuptools.packages.find]
+exclude = ["notebooks*", "references*"]
+
 [project.urls]
 "Homepage" = "https://github.com/JPL-Evapotranspiration-Algorithms/STIC-JPL"
-
-[tool.setuptools.packages.find]
-include = ["STIC_JPL", "STIC_JPL.*"]
-exclude = ["references"]
