@@ -48,7 +48,7 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-STIC_JPL = ["*.txt"]
+STIC_JPL = ["*.csv"]
 
 [tool.setuptools.packages.find]
 exclude = ["notebooks*", "references*"]
