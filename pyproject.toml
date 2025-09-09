@@ -19,6 +19,8 @@ classifiers = [
 dependencies = [
     "check-distribution",
     "colored-logging",
+    "daylight-evapotranspiration",
+    "ECOv002-calval-tables",
     "ECOv002-CMR>=1.0.5",
     "ECOv002-granules>=1.0.3",
     "ECOv003-granules",
@@ -30,7 +32,7 @@ dependencies = [
     "rasters>=1.4.6",
     "seaborn",
     "SEBAL-soil-heat-flux",
-    "solar-apparent-time",
+    "solar-apparent-time>=1.5.3",
     "verma-net-radiation>=1.1.0"
 ]
 requires-python = ">=3.10"
@@ -46,11 +48,10 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-STIC_JPL = ["*.txt"]
+STIC_JPL = ["*.csv"]
+
+[tool.setuptools.packages.find]
+exclude = ["notebooks*", "references*"]
 
 [project.urls]
 "Homepage" = "https://github.com/JPL-Evapotranspiration-Algorithms/STIC-JPL"
-
-[tool.setuptools.packages.find]
-include = ["STIC_JPL", "STIC_JPL.*"]
-exclude = ["references"]
