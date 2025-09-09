@@ -47,7 +47,7 @@ def process_STIC_table(
         Ta_C=Ta_C,
         RH=RH,
         Rn_Wm2=Rn,
-        G=G,
+        G_Wm2=G,
         # Rg_Wm2=Rg,
         max_iterations=max_iterations,
         use_variable_alpha=use_variable_alpha

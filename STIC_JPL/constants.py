@@ -1,5 +1,7 @@
 from matplotlib.colors import LinearSegmentedColormap
 
+RESAMPLING = "cubic"
+
 RHO_KGM3 = 1.2  # Air density (kg m-3)
 CP_JKG = 1013  # Specific heat of air at constant pressure (J/kg/K)
 GAMMA_HPA = 0.67  # Psychrometric constant (hpa/K)

@@ -19,6 +19,8 @@ classifiers = [
 dependencies = [
     "check-distribution",
     "colored-logging",
+    "daylight-evapotranspiration",
+    "ECOv002-calval-tables",
     "ECOv002-CMR>=1.0.5",
     "ECOv002-granules>=1.0.3",
     "ECOv003-granules",

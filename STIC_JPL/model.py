@@ -5,6 +5,8 @@ from os.path import join, abspath, expanduser
 from typing import Dict, List
 import numpy as np
 import warnings
+from verma_net_radiation import daylight_Rn_integration_verma
+from sun_angles import calculate_daylight
 
 from pytictoc import TicToc
 
@@ -16,6 +18,8 @@ from solar_apparent_time import solar_day_of_year_for_area, solar_hour_of_day_fo
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from rasters import Raster, RasterGeometry
+
+from daylight_evapotranspiration import daylight_ET_from_instantaneous_LE
 
 from .constants import *
 from .closure import STIC_closure
@@ -49,7 +53,7 @@ def STIC_JPL(
         GEOS5FP_connection: GEOS5FP = None,
         Ta_C: Union[Raster, np.ndarray] = None,
         RH: Union[Raster, np.ndarray] = None,
-        G: Union[Raster, np.ndarray] = None,
+        G_Wm2: Union[Raster, np.ndarray] = None,
         G_method: str = DEFAULT_G_METHOD,
         SM: Union[Raster, np.ndarray] = None,
         Rg_Wm2: Union[Raster, np.ndarray] = None,
@@ -63,10 +67,16 @@ def STIC_JPL(
         alpha: float = PT_ALPHA,
         LE_convergence_target: float = LE_CONVERGENCE_TARGET_WM2,
         max_iterations: int = MAX_ITERATIONS,
-        diagnostic_directory: str = None,
         show_distributions: bool = SHOW_DISTRIBUTIONS,
-        use_variable_alpha: bool = USE_VARIABLE_ALPHA) -> Dict[str, Union[Raster, np.ndarray]]:
+        use_variable_alpha: bool = USE_VARIABLE_ALPHA,
+        upscale_to_daily: bool = False,
+        resampling: str = RESAMPLING) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
+    # For daily upscaling
+    Rn_daily_Wm2 = None
+    EF = None
+    LE_daylight_Wm2 = None
+    ET_daily_kg = None
 
     if geometry is None and isinstance(ST_C, Raster):
         geometry = ST_C.geometry
@@ -80,11 +90,6 @@ def STIC_JPL(
 
     if time_UTC is None and day_of_year is None and hour_of_day is None:
         raise ValueError("no time given between time_UTC, day_of_year, and hour_of_day")
-
-    diag_kwargs = {
-        "show_distributions": show_distributions, 
-        "output_directory": diagnostic_directory
-    }
 
     seconds_of_day = hour_of_day * 3600.0
 
@@ -134,15 +139,15 @@ def STIC_JPL(
         # if G is None and SM is None:
         #     raise ValueError("soil heat flux or soil moisture prior required if solar radiation is not given")
 
-        if G is None:
-            G = calculate_SEBAL_soil_heat_flux(
+        if G_Wm2 is None:
+            G_Wm2 = calculate_SEBAL_soil_heat_flux(
                 ST_C=ST_C,
                 NDVI=NDVI,
                 albedo=albedo,
                 Rn=Rn_Wm2,
             )
         
-        phi_Wm2 = Rn_Wm2 - G
+        phi_Wm2 = Rn_Wm2 - G_Wm2
 
         # initialize without solar radiation
         SM, SMrz, s1, s3, s33, s44, Ms, Tsd_C, Es_hPa, Ds = initialize_without_solar(
@@ -159,7 +164,7 @@ def STIC_JPL(
             alpha = alpha  # Priestley-Taylor alpha
         )
     else:
-        SM, SMrz, Ms, s1, s3, Ep_PT, Rnsoil, LWnet_Wm2, G, Tsd_C, Ds, Es_hPa, phi_Wm2 = initialize_with_solar(
+        SM, SMrz, Ms, s1, s3, Ep_PT, Rnsoil, LWnet_Wm2, G_Wm2, Tsd_C, Ds, Es_hPa, phi_Wm2 = initialize_with_solar(
             seconds_of_day = seconds_of_day,  # time of day in seconds since midnight
             Rg_Wm2 = Rg_Wm2,  # solar radiation (W/m^2)
             Rn_Wm2 = Rn_Wm2,  # net radiation (W/m^2)
@@ -262,7 +267,7 @@ def STIC_JPL(
                 Cp_Jkg = Cp_Jkg  # Specific heat at constant pressure (J/kg/K)
             )
         else:
-            SM, G, e0, e0star, D0, alphaN = iterate_with_solar(
+            SM, G_Wm2, e0, e0star, D0, alphaN = iterate_with_solar(
                 seconds_of_day = seconds_of_day,  # Seconds of the day
                 ST_C = ST_C,  # Soil temperature (°C)
                 NDVI = NDVI,  # Normalized Difference Vegetation Index
@@ -336,7 +341,7 @@ def STIC_JPL(
             f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t.tocvalue()} seconds)")
         
         check_distribution(SM, f"SM_{iteration}")
-        check_distribution(G, f"G_{iteration}")
+        check_distribution(G_Wm2, f"G_{iteration}")
         check_distribution(LE_Wm2_new, f"LE_{iteration}")
 
         if LE_Wm2_max_change <= LE_convergence_target:
@@ -355,7 +360,7 @@ def STIC_JPL(
     results["LEt"] = LE_transpiration_Wm2
     results["PT"] = PT_Wm2
     results["PET"] = PET_Wm2
-    results["G"] = G
+    results["G"] = G_Wm2
 
     if isinstance(geometry, RasterGeometry):
         for name, array in results.items():
@@ -368,5 +373,26 @@ def STIC_JPL(
         results["PET"].cmap = ET_COLORMAP
 
     warnings.resetwarnings()
+
+    # --- Daily Upscaling (if requested) ---
+    if upscale_to_daily and time_UTC is not None:
+        logger.info("started daily ET upscaling (STIC-JPL)")
+        t_et = TicToc()
+        t_et.tic()
+
+                # Use new upscaling function from daylight_evapotranspiration
+        daylight_results = daylight_ET_from_instantaneous_LE(
+            LE_instantaneous_Wm2=LE_Wm2,
+            Rn_instantaneous_Wm2=Rn_Wm2,
+            G_instantaneous_Wm2=G_Wm2,
+            day_of_year=day_of_year,
+            time_UTC=time_UTC,
+            geometry=geometry
+        )
+        # Add all returned daylight results to output
+        results.update(daylight_results)
+
+        elapsed_et = t_et.tocvalue()
+        logger.info(f"completed daily ET upscaling (elapsed: {elapsed_et:.2f} seconds)")
 
     return results
