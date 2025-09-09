@@ -32,7 +32,7 @@ dependencies = [
     "rasters>=1.4.6",
     "seaborn",
     "SEBAL-soil-heat-flux",
-    "solar-apparent-time",
+    "solar-apparent-time>=1.5.3",
     "verma-net-radiation>=1.1.0"
 ]
 requires-python = ">=3.10"

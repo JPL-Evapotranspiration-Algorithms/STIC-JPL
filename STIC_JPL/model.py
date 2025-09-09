@@ -14,7 +14,7 @@ import colored_logging as cl
 from check_distribution import check_distribution
 import rasters as rt
 from GEOS5FP import GEOS5FP
-from solar_apparent_time import solar_day_of_year_for_area, solar_hour_of_day_for_area
+from solar_apparent_time import calculate_solar_day_of_year, calculate_solar_hour_of_day
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from rasters import Raster, RasterGeometry
@@ -85,8 +85,8 @@ def STIC_JPL(
         GEOS5FP_connection = GEOS5FP()
 
     if (day_of_year is None or hour_of_day is None) and time_UTC is not None and geometry is not None:
-        day_of_year = solar_day_of_year_for_area(time_UTC=time_UTC, geometry=geometry)
-        hour_of_day = solar_hour_of_day_for_area(time_UTC=time_UTC, geometry=geometry)
+        day_of_year = calculate_solar_day_of_year(time_UTC=time_UTC, geometry=geometry)
+        hour_of_day = calculate_solar_hour_of_day(time_UTC=time_UTC, geometry=geometry)
 
     if time_UTC is None and day_of_year is None and hour_of_day is None:
         raise ValueError("no time given between time_UTC, day_of_year, and hour_of_day")
@@ -353,14 +353,14 @@ def STIC_JPL(
     results["LE_max_change"] = LE_Wm2_max_change
     results["iteration"] = iteration
 
-    LE = LE_Wm2_new
+    LE_Wm2 = LE_Wm2_new
 
-    results["LE"] = LE
+    results["LE_Wm2"] = LE_Wm2
     results["LE_change"] = LE_Wm2_change
-    results["LEt"] = LE_transpiration_Wm2
+    results["LE_transpiration_Wm2"] = LE_transpiration_Wm2
     results["PT"] = PT_Wm2
-    results["PET"] = PET_Wm2
-    results["G"] = G_Wm2
+    results["PET_Wm2"] = PET_Wm2
+    results["G_Wm2"] = G_Wm2
 
     if isinstance(geometry, RasterGeometry):
         for name, array in results.items():
@@ -369,8 +369,8 @@ def STIC_JPL(
             except Exception as e:
                 pass
         
-        results["LE"].cmap = ET_COLORMAP
-        results["PET"].cmap = ET_COLORMAP
+        results["LE_Wm2"].cmap = ET_COLORMAP
+        results["PET_Wm2"].cmap = ET_COLORMAP
 
     warnings.resetwarnings()
 
