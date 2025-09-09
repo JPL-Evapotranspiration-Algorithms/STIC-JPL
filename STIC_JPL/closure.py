@@ -41,20 +41,28 @@ def STIC_closure(
     dT (np.ndarray): difference between surface and air temperature
     EF (np.ndarray): evaporative fraction
     """
+
+    epsilon = 1e-8  # Small value to prevent division by zero
+
     # boundary layer conductance (m s^-1)
-    gB = ((2 * phi_Wm2 * alpha * delta_hPa * gamma_hPa) / (2 * Cp_Jkg * delta_hPa * Es_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Ea_hPa * rho_kgm3 - 2 * Cp_Jkg * Ea_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * Es_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * Estar_hPa * gamma_hPa * rho_kgm3 - Cp_Jkg * SM * Es_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Estar_hPa * gamma_hPa * rho_kgm3))
+    gB_den = (2 * Cp_Jkg * delta_hPa * Es_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Ea_hPa * rho_kgm3 - 2 * Cp_Jkg * Ea_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * Es_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * Estar_hPa * gamma_hPa * rho_kgm3 - Cp_Jkg * SM * Es_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Estar_hPa * gamma_hPa * rho_kgm3)
+    gB = ((2 * phi_Wm2 * alpha * delta_hPa * gamma_hPa) / (gB_den + epsilon))
     gB = rt.clip(gB, 0.0001, 0.2)
 
     # stomatal conductance (m s^-1)
-    gS = (-(2 * (phi_Wm2 * alpha * delta_hPa * Ea_hPa * gamma_hPa - phi_Wm2 * alpha * delta_hPa * Es_hPa * gamma_hPa)) / (Cp_Jkg * Estar_hPa ** 2 * gamma_hPa * rho_kgm3 - Cp_Jkg * Es_hPa ** 2 * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Es_hPa ** 2 * rho_kgm3 + 2 * Cp_Jkg * delta_hPa * Ea_hPa * Es_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Ea_hPa * Estar_hPa * rho_kgm3 + 2 * Cp_Jkg * delta_hPa * Es_hPa * Estar_hPa * rho_kgm3 + 2 * Cp_Jkg * Ea_hPa * Es_hPa * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * Ea_hPa * Estar_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Es_hPa ** 2 * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Estar_hPa ** 2 * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * SM * Es_hPa * Estar_hPa * gamma_hPa * rho_kgm3))
+    gS_den = (Cp_Jkg * Estar_hPa ** 2 * gamma_hPa * rho_kgm3 - Cp_Jkg * Es_hPa ** 2 * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Es_hPa ** 2 * rho_kgm3 + 2 * Cp_Jkg * delta_hPa * Ea_hPa * Es_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Ea_hPa * Estar_hPa * rho_kgm3 + 2 * Cp_Jkg * delta_hPa * Es_hPa * Estar_hPa * rho_kgm3 + 2 * Cp_Jkg * Ea_hPa * Es_hPa * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * Ea_hPa * Estar_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Es_hPa ** 2 * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Estar_hPa ** 2 * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * SM * Es_hPa * Estar_hPa * gamma_hPa * rho_kgm3)
+    gS = (-(2 * (phi_Wm2 * alpha * delta_hPa * Ea_hPa * gamma_hPa - phi_Wm2 * alpha * delta_hPa * Es_hPa * gamma_hPa)) / (gS_den + epsilon))
     gS = rt.clip(gS, 0.0001, 0.2)
 
     # difference between surface and air temperature (Celsius)
-    dT = (2 * delta_hPa * Es_hPa - 2 * delta_hPa * Ea_hPa - 2 * Ea_hPa * gamma_hPa + Es_hPa * gamma_hPa + Estar_hPa * gamma_hPa - SM * Es_hPa * gamma_hPa + SM * Estar_hPa * gamma_hPa + 2 * alpha * delta_hPa * Ea_hPa - 2 * alpha * delta_hPa * Es_hPa) / (2 * alpha * delta_hPa * gamma_hPa)
+    dT_num = (2 * delta_hPa * Es_hPa - 2 * delta_hPa * Ea_hPa - 2 * Ea_hPa * gamma_hPa + Es_hPa * gamma_hPa + Estar_hPa * gamma_hPa - SM * Es_hPa * gamma_hPa + SM * Estar_hPa * gamma_hPa + 2 * alpha * delta_hPa * Ea_hPa - 2 * alpha * delta_hPa * Es_hPa)
+    dT_den = (2 * alpha * delta_hPa * gamma_hPa)
+    dT = dT_num / (dT_den + epsilon)
     dT = rt.clip(dT, -10, 50)
 
     # evaporative fraction
-    EF = -(2 * alpha * delta_hPa * Ea_hPa - 2 * alpha * delta_hPa * Es_hPa) / (2 * delta_hPa * Es_hPa - 2 * delta_hPa * Ea_hPa - 2 * Ea_hPa * gamma_hPa + Es_hPa * gamma_hPa + Estar_hPa * gamma_hPa - SM * Es_hPa * gamma_hPa + SM * Estar_hPa * gamma_hPa)
+    EF_den = (2 * delta_hPa * Es_hPa - 2 * delta_hPa * Ea_hPa - 2 * Ea_hPa * gamma_hPa + Es_hPa * gamma_hPa + Estar_hPa * gamma_hPa - SM * Es_hPa * gamma_hPa + SM * Estar_hPa * gamma_hPa)
+    EF = -(2 * alpha * delta_hPa * Ea_hPa - 2 * alpha * delta_hPa * Es_hPa) / (EF_den + epsilon)
     EF = rt.clip(EF, 0, 1)
 
     return gB, gS, dT, EF
