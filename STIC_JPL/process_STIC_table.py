@@ -22,14 +22,14 @@ def process_STIC_table(
     albedo = np.float64(np.array(input_df.albedo))
     Ta_C = np.float64(np.array(input_df.Ta_C))
     RH = np.float64(np.array(input_df.RH))
-    Rn = np.float64(np.array(input_df.Rn))
+    Rn_Wm2 = np.float64(np.array(input_df.Rn_Wm2))
     Rg = np.float64(np.array(input_df.Rg))
 
     if "G" in input_df:
         G_Wm2 = np.array(input_df.G)
     else:
         G_Wm2 = calculate_SEBAL_soil_heat_flux(
-            Rn=Rn,
+            Rn=Rn_Wm2,
             ST_C=ST_C,
             NDVI=NDVI,
             albedo=albedo
@@ -90,7 +90,7 @@ def process_STIC_table(
         albedo=albedo,
         Ta_C=Ta_C,
         RH=RH,
-        Rn_Wm2=Rn,
+        Rn_Wm2=Rn_Wm2,
         G_Wm2=G_Wm2,
         time_UTC=time_UTC,
         max_iterations=max_iterations,
