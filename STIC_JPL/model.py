@@ -56,7 +56,7 @@ def STIC_JPL(
         G_Wm2: Union[Raster, np.ndarray] = None,
         G_method: str = DEFAULT_G_METHOD,
         SM: Union[Raster, np.ndarray] = None,
-        Rg_Wm2: Union[Raster, np.ndarray] = None,
+        SWin_Wm2: Union[Raster, np.ndarray] = None,
         FVC: Union[Raster, np.ndarray] = None,
         LAI: Union[Raster, np.ndarray] = None,
         elevation_m: Union[Raster, np.ndarray] = None,
@@ -70,6 +70,7 @@ def STIC_JPL(
         show_distributions: bool = SHOW_DISTRIBUTIONS,
         use_variable_alpha: bool = USE_VARIABLE_ALPHA,
         upscale_to_daily: bool = False,
+        constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
         resampling: str = RESAMPLING) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
@@ -135,7 +136,7 @@ def STIC_JPL(
     # saturation vapor pressure at surface temperature (hPa/K)
     Estar_hPa = 6.13753 * np.exp((17.27 * ST_C) / (ST_C + 237.3))
 
-    if Rg_Wm2 is None:
+    if SWin_Wm2 is None:
         # if G is None and SM is None:
         #     raise ValueError("soil heat flux or soil moisture prior required if solar radiation is not given")
 
@@ -166,7 +167,7 @@ def STIC_JPL(
     else:
         SM, SMrz, Ms, s1, s3, Ep_PT, Rnsoil, LWnet_Wm2, G_Wm2, Tsd_C, Ds, Es_hPa, phi_Wm2 = initialize_with_solar(
             seconds_of_day = seconds_of_day,  # time of day in seconds since midnight
-            Rg_Wm2 = Rg_Wm2,  # solar radiation (W/m^2)
+            Rg_Wm2 = SWin_Wm2,  # solar radiation (W/m^2)
             Rn_Wm2 = Rn_Wm2,  # net radiation (W/m^2)
             ST_C = ST_C,  # surface temperature (Celsius)
             emissivity = emissivity,  # emissivity of the surface
@@ -240,7 +241,7 @@ def STIC_JPL(
     while (np.nanmax(LE_Wm2_change) >= LE_convergence_target and iteration <= max_iterations):
         logger.info(f"running STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)}")
 
-        if Rg_Wm2 is None:
+        if SWin_Wm2 is None:
             SM, SMrz, Ms, s1, e0, e0star, Tsd_C, D0, alphaN = iterate_without_solar(
                 LE = LE_Wm2_new,  # Latent heat flux (W/m^2)
                 PET = PET_Wm2,  # Potential evapotranspiration (W/m^2)
@@ -275,7 +276,7 @@ def STIC_JPL(
                 gB_ms = gB_ms,  # boundary layer conductance (m/s)
                 gS_ms = gS_ms,  # stomatal conductance (m/s)
                 LE_Wm2 = LE_Wm2_new,  # latent heat flux (W/m^2)
-                Rg_Wm2 = Rg_Wm2,  # Incoming solar radiation (W/m^2)
+                Rg_Wm2 = SWin_Wm2,  # Incoming solar radiation (W/m^2)
                 Rn_Wm2 = Rn_Wm2,  # Net radiation (W/m^2)
                 LWnet_Wm2 = LWnet_Wm2,  # Net longwave radiation (W/m^2)
                 Ta_C = Ta_C,  # Air temperature (°C)
@@ -323,6 +324,10 @@ def STIC_JPL(
         # latent heat flux
         LE_Wm2_new = ((delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + gB_by_gS)))
         LE_Wm2_new = rt.where(LE_Wm2_new > phi_Wm2, phi_Wm2, LE_Wm2_new)
+
+        if constrain_negative_LE:
+            LE_Wm2_new = rt.where(LE_Wm2_new < 0, 0, LE_Wm2_new)
+
         # Sensible Heat Flux
         H_Wm2 = ((gamma_hPa * phi_Wm2 * (1 + gB_by_gS) - rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + (gB_by_gS))))
         # potential evaporation (Penman)

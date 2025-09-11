@@ -8,6 +8,7 @@ from sentinel_tiles import sentinel_tiles
 from solar_apparent_time import UTC_to_solar
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
+from .constants import *
 from .model import STIC_JPL, MAX_ITERATIONS, USE_VARIABLE_ALPHA
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,10 @@ logger = logging.getLogger(__name__)
 def process_STIC_table(
         input_df: DataFrame, 
         max_iterations = MAX_ITERATIONS, 
-        use_variable_alpha = USE_VARIABLE_ALPHA) -> DataFrame:
+        use_variable_alpha = USE_VARIABLE_ALPHA,
+        constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
+        supply_SWin = SUPPLY_SWIN
+    ) -> DataFrame:
     ST_C = np.float64(np.array(input_df.ST_C))
     emissivity = np.float64(np.array(input_df.EmisWB))
     NDVI = np.float64(np.array(input_df.NDVI))
@@ -34,6 +38,11 @@ def process_STIC_table(
             NDVI=NDVI,
             albedo=albedo
         )
+    
+    if "SWin_Wm2" in input_df and supply_SWin:
+        SWin_Wm2 = np.float64(np.array(input_df.SWin_Wm2))
+    else:
+        SWin_Wm2 = None
 
     # --- Handle geometry and time columns ---
     import pandas as pd
@@ -92,9 +101,11 @@ def process_STIC_table(
         RH=RH,
         Rn_Wm2=Rn_Wm2,
         G_Wm2=G_Wm2,
+        SWin_Wm2=SWin_Wm2,
         time_UTC=time_UTC,
         max_iterations=max_iterations,
-        use_variable_alpha=use_variable_alpha
+        use_variable_alpha=use_variable_alpha,
+        constrain_negative_LE=constrain_negative_LE
     )
 
     output_df = input_df.copy()

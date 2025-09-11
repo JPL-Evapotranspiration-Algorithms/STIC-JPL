@@ -1,6 +1,8 @@
 from matplotlib.colors import LinearSegmentedColormap
 
 RESAMPLING = "cubic"
+CONSTRAIN_NEGATIVE_LE = False
+SUPPLY_SWIN = False
 
 RHO_KGM3 = 1.2  # Air density (kg m-3)
 CP_JKG = 1013  # Specific heat of air at constant pressure (J/kg/K)
