@@ -69,7 +69,7 @@ def STIC_JPL(
         max_iterations: int = MAX_ITERATIONS,
         show_distributions: bool = SHOW_DISTRIBUTIONS,
         use_variable_alpha: bool = USE_VARIABLE_ALPHA,
-        upscale_to_daily: bool = False,
+        upscale_to_daylight: bool = UPSCALE_TO_DAYLIGHT,
         constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
         resampling: str = RESAMPLING) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
@@ -380,7 +380,7 @@ def STIC_JPL(
     warnings.resetwarnings()
 
     # --- Daily Upscaling (if requested) ---
-    if upscale_to_daily and time_UTC is not None:
+    if upscale_to_daylight and time_UTC is not None:
         logger.info("started daily ET upscaling (STIC-JPL)")
         t_et = TicToc()
         t_et.tic()
