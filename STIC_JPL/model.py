@@ -230,7 +230,7 @@ def STIC_JPL(
     LE_Wm2_new = LE_init
     LE_Wm2_change = LE_convergence_target
     LE_Wm2_old = LE_Wm2_new
-    LE_transpiration_Wm2 = None
+    LE_canopy_Wm2 = None
     PT_Wm2 = None
     iteration = 1
     LE_Wm2_max_change = 0
@@ -336,7 +336,7 @@ def STIC_JPL(
         PT_Wm2 = (delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + SM * gB_by_gS))  # potential transpiration
         # ET PARTITIONING
         LE_soil_Wm2 = rt.clip(SM * PET_Wm2, 0, None)
-        LE_transpiration_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
+        LE_canopy_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
         # change in latent heat flux estimate
         LE_Wm2_change = np.abs(LE_Wm2_old - LE_Wm2_new)
         LE_Wm2_new = rt.where(np.isnan(LE_Wm2_new), LE_Wm2_old, LE_Wm2_new)
@@ -362,7 +362,8 @@ def STIC_JPL(
 
     results["LE_Wm2"] = LE_Wm2
     results["LE_change"] = LE_Wm2_change
-    results["LE_transpiration_Wm2"] = LE_transpiration_Wm2
+    results["LE_soil_Wm2"] = LE_soil_Wm2
+    results["LE_canopy_Wm2"] = LE_canopy_Wm2
     results["PT"] = PT_Wm2
     results["PET_Wm2"] = PET_Wm2
     results["G_Wm2"] = G_Wm2
