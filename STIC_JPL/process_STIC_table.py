@@ -1,12 +1,14 @@
 import logging
 
 import numpy as np
+import pandas as pd
 from dateutil import parser
 from pandas import DataFrame
-from rasters import Point
+from rasters import Point, MultiPoint, WGS84
 from sentinel_tiles import sentinel_tiles
 from solar_apparent_time import UTC_to_solar
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from shapely.geometry import Point
 
 from .constants import *
 from .model import STIC_JPL, MAX_ITERATIONS, USE_VARIABLE_ALPHA
@@ -18,8 +20,71 @@ def process_STIC_table(
         max_iterations = MAX_ITERATIONS, 
         use_variable_alpha = USE_VARIABLE_ALPHA,
         constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
-        supply_SWin = SUPPLY_SWIN
+        supply_SWin = SUPPLY_SWIN,
+        upscale_to_daylight = UPSCALE_TO_DAYLIGHT
     ) -> DataFrame:
+    
+    # If upscale_to_daylight is True, process row by row to avoid time array issues
+    if upscale_to_daylight:
+        logger.info("Processing data row by row for daylight upscaling")
+        results_list = []
+        
+        for i, (idx, row) in enumerate(input_df.iterrows()):
+            try:
+                # Create single-row DataFrame
+                single_row_df = DataFrame([row])
+                
+                # Process single row
+                result = process_STIC_table_single(
+                    single_row_df, 
+                    max_iterations=max_iterations,
+                    use_variable_alpha=use_variable_alpha,
+                    constrain_negative_LE=constrain_negative_LE,
+                    supply_SWin=supply_SWin,
+                    upscale_to_daylight=True
+                )
+                
+                results_list.append(result)
+                
+            except Exception as e:
+                logger.warning(f"Error processing row {i}: {e}")
+                # Create result with NaN values for failed rows
+                result = single_row_df.copy()
+                # Add expected output columns with NaN
+                expected_outputs = ['LE_Wm2', 'ET_daylight_kg', 'LE', 'ET_daily_kg', 'EF', 'Rn_daylight_Wm2']
+                for col in expected_outputs:
+                    if col not in result.columns:
+                        result[col] = np.nan
+                results_list.append(result)
+        
+        # Concatenate all results
+        if results_list:
+            return pd.concat(results_list, ignore_index=True)
+        else:
+            return DataFrame()
+    
+    else:
+        # Process as batch when not upscaling to daylight
+        return process_STIC_table_single(
+            input_df, 
+            max_iterations=max_iterations,
+            use_variable_alpha=use_variable_alpha,
+            constrain_negative_LE=constrain_negative_LE,
+            supply_SWin=supply_SWin,
+            upscale_to_daylight=False
+        )
+
+
+def process_STIC_table_single(
+        input_df: DataFrame, 
+        max_iterations = MAX_ITERATIONS, 
+        use_variable_alpha = USE_VARIABLE_ALPHA,
+        constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
+        supply_SWin = SUPPLY_SWIN,
+        upscale_to_daylight = UPSCALE_TO_DAYLIGHT
+    ) -> DataFrame:
+    """Process a single row or batch of data through STIC-JPL model."""
+    
     ST_C = np.float64(np.array(input_df.ST_C))
     emissivity = np.float64(np.array(input_df.EmisWB))
     NDVI = np.float64(np.array(input_df.NDVI))
@@ -45,10 +110,6 @@ def process_STIC_table(
         SWin_Wm2 = None
 
     # --- Handle geometry and time columns ---
-    import pandas as pd
-    from rasters import MultiPoint, WGS84
-    from shapely.geometry import Point
-
     def ensure_geometry(df):
         if "geometry" in df:
             if isinstance(df.geometry.iloc[0], str):
@@ -88,7 +149,13 @@ def process_STIC_table(
     logger.info("completed extracting geometry from PT-JPL-SM input table")
 
     logger.info("started extracting time from PT-JPL-SM input table")
-    time_UTC = pd.to_datetime(input_df.time_UTC).tolist()
+    
+    # Handle time conversion - for single row, extract single datetime
+    if len(input_df) == 1:
+        time_UTC = pd.to_datetime(input_df.time_UTC.iloc[0])
+    else:
+        time_UTC = pd.to_datetime(input_df.time_UTC).tolist()
+    
     logger.info("completed extracting time from PT-JPL-SM input table")
     
     results = STIC_JPL(
@@ -105,7 +172,8 @@ def process_STIC_table(
         time_UTC=time_UTC,
         max_iterations=max_iterations,
         use_variable_alpha=use_variable_alpha,
-        constrain_negative_LE=constrain_negative_LE
+        constrain_negative_LE=constrain_negative_LE,
+        upscale_to_daylight=upscale_to_daylight
     )
 
     output_df = input_df.copy()
