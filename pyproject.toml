@@ -17,11 +17,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "BESS-JPL>=1.18.0",
+    "BESS-JPL>=1.21.0",
     "check-distribution",
     "colored-logging",
     "daylight-evapotranspiration>=1.3.4",
-    "ECOv002-calval-tables",
+    "ECOv002-calval-tables>=1.11.0",
     "ECOv002-CMR>=1.0.5",
     "ECOv002-granules>=1.0.3",
     "ECOv003-granules",
