@@ -23,56 +23,20 @@ def process_STIC_table(
         supply_SWin = SUPPLY_SWIN,
         upscale_to_daylight = UPSCALE_TO_DAYLIGHT
     ) -> DataFrame:
+    """
+    Process STIC table with batch processing.
     
-    # If upscale_to_daylight is True, process row by row to avoid time array issues
-    if upscale_to_daylight:
-        logger.info("Processing data row by row for daylight upscaling")
-        results_list = []
-        
-        for i, (idx, row) in enumerate(input_df.iterrows()):
-            try:
-                # Create single-row DataFrame
-                single_row_df = DataFrame([row])
-                
-                # Process single row
-                result = process_STIC_table_single(
-                    single_row_df, 
-                    max_iterations=max_iterations,
-                    use_variable_alpha=use_variable_alpha,
-                    constrain_negative_LE=constrain_negative_LE,
-                    supply_SWin=supply_SWin,
-                    upscale_to_daylight=True
-                )
-                
-                results_list.append(result)
-                
-            except Exception as e:
-                logger.warning(f"Error processing row {i}: {e}")
-                # Create result with NaN values for failed rows
-                result = single_row_df.copy()
-                # Add expected output columns with NaN
-                expected_outputs = ['LE_Wm2', 'ET_daylight_kg', 'LE', 'ET_daily_kg', 'EF', 'Rn_daylight_Wm2']
-                for col in expected_outputs:
-                    if col not in result.columns:
-                        result[col] = np.nan
-                results_list.append(result)
-        
-        # Concatenate all results
-        if results_list:
-            return pd.concat(results_list, ignore_index=True)
-        else:
-            return DataFrame()
-    
-    else:
-        # Process as batch when not upscaling to daylight
-        return process_STIC_table_single(
-            input_df, 
-            max_iterations=max_iterations,
-            use_variable_alpha=use_variable_alpha,
-            constrain_negative_LE=constrain_negative_LE,
-            supply_SWin=supply_SWin,
-            upscale_to_daylight=False
-        )
+    Note: daylight_evapotranspiration now supports arrays of datetime objects,
+    so batch processing works efficiently even with upscale_to_daylight=True.
+    """
+    return process_STIC_table_single(
+        input_df, 
+        max_iterations=max_iterations,
+        use_variable_alpha=use_variable_alpha,
+        constrain_negative_LE=constrain_negative_LE,
+        supply_SWin=supply_SWin,
+        upscale_to_daylight=upscale_to_daylight
+    )
 
 
 def process_STIC_table_single(
@@ -150,7 +114,7 @@ def process_STIC_table_single(
 
     logger.info("started extracting time from PT-JPL-SM input table")
     
-    # Handle time conversion - for single row, extract single datetime
+    # Handle time conversion - for single row, extract single datetime; for multiple rows, use list
     if len(input_df) == 1:
         time_UTC = pd.to_datetime(input_df.time_UTC.iloc[0])
     else:

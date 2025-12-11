@@ -20,7 +20,7 @@ dependencies = [
     "BESS-JPL>=1.18.0",
     "check-distribution",
     "colored-logging",
-    "daylight-evapotranspiration",
+    "daylight-evapotranspiration>=1.3.4",
     "ECOv002-calval-tables",
     "ECOv002-CMR>=1.0.5",
     "ECOv002-granules>=1.0.3",
