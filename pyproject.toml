@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name = "STIC-JPL"
-version = "1.4.0"
+version = "1.5.0"
 description = "Surface Temperature Initiated Closure (STIC) Evapotranspiration Model Python Implementation"
 readme = "README.md"
 authors = [
@@ -17,11 +17,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "BESS-JPL>=1.18.0",
+    "BESS-JPL>=1.21.0",
     "check-distribution",
     "colored-logging",
-    "daylight-evapotranspiration",
-    "ECOv002-calval-tables",
+    "daylight-evapotranspiration>=1.3.4",
+    "ECOv002-calval-tables>=1.11.0",
     "ECOv002-CMR>=1.0.5",
     "ECOv002-granules>=1.0.3",
     "ECOv003-granules",

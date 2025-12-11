@@ -1,12 +1,14 @@
 import logging
 
 import numpy as np
+import pandas as pd
 from dateutil import parser
 from pandas import DataFrame
-from rasters import Point
+from rasters import Point, MultiPoint, WGS84
 from sentinel_tiles import sentinel_tiles
 from solar_apparent_time import UTC_to_solar
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from shapely.geometry import Point
 
 from .constants import *
 from .model import STIC_JPL, MAX_ITERATIONS, USE_VARIABLE_ALPHA
@@ -18,8 +20,35 @@ def process_STIC_table(
         max_iterations = MAX_ITERATIONS, 
         use_variable_alpha = USE_VARIABLE_ALPHA,
         constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
-        supply_SWin = SUPPLY_SWIN
+        supply_SWin = SUPPLY_SWIN,
+        upscale_to_daylight = UPSCALE_TO_DAYLIGHT
     ) -> DataFrame:
+    """
+    Process STIC table with batch processing.
+    
+    Note: daylight_evapotranspiration now supports arrays of datetime objects,
+    so batch processing works efficiently even with upscale_to_daylight=True.
+    """
+    return process_STIC_table_single(
+        input_df, 
+        max_iterations=max_iterations,
+        use_variable_alpha=use_variable_alpha,
+        constrain_negative_LE=constrain_negative_LE,
+        supply_SWin=supply_SWin,
+        upscale_to_daylight=upscale_to_daylight
+    )
+
+
+def process_STIC_table_single(
+        input_df: DataFrame, 
+        max_iterations = MAX_ITERATIONS, 
+        use_variable_alpha = USE_VARIABLE_ALPHA,
+        constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
+        supply_SWin = SUPPLY_SWIN,
+        upscale_to_daylight = UPSCALE_TO_DAYLIGHT
+    ) -> DataFrame:
+    """Process a single row or batch of data through STIC-JPL model."""
+    
     ST_C = np.float64(np.array(input_df.ST_C))
     emissivity = np.float64(np.array(input_df.EmisWB))
     NDVI = np.float64(np.array(input_df.NDVI))
@@ -45,10 +74,6 @@ def process_STIC_table(
         SWin_Wm2 = None
 
     # --- Handle geometry and time columns ---
-    import pandas as pd
-    from rasters import MultiPoint, WGS84
-    from shapely.geometry import Point
-
     def ensure_geometry(df):
         if "geometry" in df:
             if isinstance(df.geometry.iloc[0], str):
@@ -88,7 +113,13 @@ def process_STIC_table(
     logger.info("completed extracting geometry from PT-JPL-SM input table")
 
     logger.info("started extracting time from PT-JPL-SM input table")
-    time_UTC = pd.to_datetime(input_df.time_UTC).tolist()
+    
+    # Handle time conversion - for single row, extract single datetime; for multiple rows, use list
+    if len(input_df) == 1:
+        time_UTC = pd.to_datetime(input_df.time_UTC.iloc[0])
+    else:
+        time_UTC = pd.to_datetime(input_df.time_UTC).tolist()
+    
     logger.info("completed extracting time from PT-JPL-SM input table")
     
     results = STIC_JPL(
@@ -105,7 +136,8 @@ def process_STIC_table(
         time_UTC=time_UTC,
         max_iterations=max_iterations,
         use_variable_alpha=use_variable_alpha,
-        constrain_negative_LE=constrain_negative_LE
+        constrain_negative_LE=constrain_negative_LE,
+        upscale_to_daylight=upscale_to_daylight
     )
 
     output_df = input_df.copy()
