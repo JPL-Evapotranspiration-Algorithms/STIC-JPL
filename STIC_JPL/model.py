@@ -22,6 +22,7 @@ from rasters import Raster, RasterGeometry
 from daylight_evapotranspiration import daylight_ET_from_instantaneous_LE
 
 from .constants import *
+from .exceptions import MissingOfflineParameter
 from .closure import STIC_closure
 from .soil_moisture_initialization import initialize_soil_moisture
 from .soil_moisture_iteration import iterate_soil_moisture
@@ -71,7 +72,8 @@ def STIC_JPL(
         use_variable_alpha: bool = USE_VARIABLE_ALPHA,
         upscale_to_daylight: bool = UPSCALE_TO_DAYLIGHT,
         constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
-        resampling: str = RESAMPLING) -> Dict[str, Union[Raster, np.ndarray]]:
+        resampling: str = RESAMPLING,
+        offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
     Rn_daily_Wm2 = None
@@ -93,6 +95,20 @@ def STIC_JPL(
         raise ValueError("no time given between time_UTC, day_of_year, and hour_of_day")
 
     seconds_of_day = hour_of_day * 3600.0
+
+    # Check for missing variables in offline mode before any GEOS-5 FP retrievals
+    if offline_mode:
+        missing_vars = []
+        
+        if Ta_C is None:
+            missing_vars.append("Ta_C")
+        if RH is None:
+            missing_vars.append("RH")
+            
+        if missing_vars:
+            raise MissingOfflineParameter(
+                f"missing STIC-JPL inputs in offline mode: {', '.join(missing_vars)}"
+            )
 
     # load air temperature in Celsius if not provided
     if Ta_C is None:

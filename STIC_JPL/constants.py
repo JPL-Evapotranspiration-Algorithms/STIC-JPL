@@ -24,3 +24,8 @@ ET_COLORMAP = LinearSegmentedColormap.from_list("ET", [
     "#6bdfd2",
     "#1839c5"
 ])
+
+GEOS5FP_INPUTS = [
+    "Ta_C",
+    "RH"
+]

@@ -21,7 +21,8 @@ def process_STIC_table(
         use_variable_alpha = USE_VARIABLE_ALPHA,
         constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
         supply_SWin = SUPPLY_SWIN,
-        upscale_to_daylight = UPSCALE_TO_DAYLIGHT
+        upscale_to_daylight = UPSCALE_TO_DAYLIGHT,
+        offline_mode: bool = False
     ) -> DataFrame:
     """
     Process STIC table with batch processing.
@@ -35,7 +36,8 @@ def process_STIC_table(
         use_variable_alpha=use_variable_alpha,
         constrain_negative_LE=constrain_negative_LE,
         supply_SWin=supply_SWin,
-        upscale_to_daylight=upscale_to_daylight
+        upscale_to_daylight=upscale_to_daylight,
+        offline_mode=offline_mode
     )
 
 
@@ -45,7 +47,8 @@ def process_STIC_table_single(
         use_variable_alpha = USE_VARIABLE_ALPHA,
         constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
         supply_SWin = SUPPLY_SWIN,
-        upscale_to_daylight = UPSCALE_TO_DAYLIGHT
+        upscale_to_daylight = UPSCALE_TO_DAYLIGHT,
+        offline_mode: bool = False
     ) -> DataFrame:
     """Process a single row or batch of data through STIC-JPL model."""
     
@@ -137,7 +140,8 @@ def process_STIC_table_single(
         max_iterations=max_iterations,
         use_variable_alpha=use_variable_alpha,
         constrain_negative_LE=constrain_negative_LE,
-        upscale_to_daylight=upscale_to_daylight
+        upscale_to_daylight=upscale_to_daylight,
+        offline_mode=offline_mode
     )
 
     output_df = input_df.copy()
