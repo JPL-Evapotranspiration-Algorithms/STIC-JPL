@@ -17,9 +17,9 @@ Lead developer<br>
 NASA Jet Propulsion Laboratory 329G
 
 Kaniska Mallick (he/him)<br>
-[kaniska.mallick@list.lu](mailto:kaniska.mallick@list.lu)<br>
-Algorithm inventor<br>
-Luxembourg Institute of Science and Technology
+[kaniska.mallick@univ-tlse3.fr  ](mailto:kaniska.mallick@univ-tlse3.fr)<br>
+Algorithm inventor <br>
+TRISHNA Ecosystem Stress, CESBIO (CNRS, CNES, IRD, INRAE)
 
 Tian Hu (he/him)<br>
 [tian.hu@list.lu](mailto:tian.hu@list.lu)<br>
