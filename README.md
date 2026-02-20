@@ -23,7 +23,7 @@ TRISHNA Ecosystem Stress, CESBIO (CNRS, CNES, IRD, INRAE)
 
 Tian Hu (he/him)<br>
 [tian.hu@list.lu](mailto:tian.hu@list.lu)<br>
-Algorithm developer<br>
+Contributor<br>
 Luxembourg Institute of Science and Technology
 
 Madeleine Pascolini-Campbell (she/her)<br>
