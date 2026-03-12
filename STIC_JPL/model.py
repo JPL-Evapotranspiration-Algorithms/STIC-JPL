@@ -33,6 +33,7 @@ from .initialize_without_solar import initialize_without_solar
 from .iterate_with_solar import iterate_with_solar
 from .iterate_without_solar import iterate_without_solar
 from .root_zone_initialization import calculate_root_zone_moisture
+from .penman_potential_evaporation import penman_potential_evaporation
 from .FVC_from_NDVI import FVC_from_NDVI
 from .LAI_from_NDVI import LAI_from_NDVI
 from .celcius_to_kelvin import celcius_to_kelvin
@@ -226,7 +227,15 @@ def STIC_JPL(
     dT_C = dT_C
     T0_C = dT_C + Ta_C
     
-    PET_Wm2 = ((delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa))  # Penman potential evaporation
+    PET_Wm2 = penman_potential_evaporation(
+        delta_hPa=delta_hPa,
+        phi_Wm2=phi_Wm2,
+        rho_kgm3=rho_kgm3,
+        Cp_Jkg=Cp_Jkg,
+        gB_ms=gB_ms,
+        VPD_hPa=VPD_hPa,
+        gamma_hPa=gamma_hPa
+    )
     
     gR = (4 * SB_SIGMA * (Ta_C + 273) ** 3 * emissivity) / (rho_kgm3 * Cp_Jkg)
     omega = ((delta_hPa / gamma_hPa) + 1) / ((delta_hPa / gamma_hPa) + 1 + gB_by_gS)
@@ -347,7 +356,15 @@ def STIC_JPL(
         # Sensible Heat Flux
         H_Wm2 = ((gamma_hPa * phi_Wm2 * (1 + gB_by_gS) - rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + (gB_by_gS))))
         # potential evaporation (Penman)
-        PET_Wm2 = ((delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa))
+        PET_Wm2 = penman_potential_evaporation(
+            delta_hPa=delta_hPa,
+            phi_Wm2=phi_Wm2,
+            rho_kgm3=rho_kgm3,
+            Cp_Jkg=Cp_Jkg,
+            gB_ms=gB_ms,
+            VPD_hPa=VPD_hPa,
+            gamma_hPa=gamma_hPa
+        )
         # Potential Transpiration
         PT_Wm2 = (delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + SM * gB_by_gS))  # potential transpiration
         # ET PARTITIONING

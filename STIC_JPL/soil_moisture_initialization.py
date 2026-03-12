@@ -9,6 +9,7 @@ from .LAI_from_NDVI import LAI_from_NDVI
 
 from .constants import GAMMA_HPA
 from .root_zone_initialization import calculate_root_zone_moisture
+from .priestley_taylor_potential_evaporation import priestley_taylor_potential_evaporation
 
 def initialize_soil_moisture(
         delta_hPa: Union[Raster, np.ndarray],  # Rate of change of saturation vapor pressure with temperature (hPa/°C)
@@ -74,7 +75,12 @@ def initialize_soil_moisture(
     Msoil = (1 - FVC) * Msurf
 
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)  # % TdewIndex > 1 signifies super dry condition
-    Ep_PT = (1.26 * delta_hPa * Rn_Wm2) / (delta_hPa + gamma_hPa)  # Potential evaporation (Priestley-Taylor eqn.)
+    Ep_PT = priestley_taylor_potential_evaporation(
+        delta_hPa=delta_hPa,
+        energy_Wm2=Rn_Wm2,
+        alpha=1.26,
+        gamma_hPa=gamma_hPa
+    )
 
     # Adjust surface wetness based on certain conditions
     Ms = rt.where((FVC <= 0.25) & (TdewIndex < 1), Msoil, Ms)

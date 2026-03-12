@@ -7,6 +7,7 @@ from rasters import Raster
 
 from .constants import GAMMA_HPA
 from .root_zone_iteration import calculate_rootzone_moisture
+from .priestley_taylor_potential_evaporation import priestley_taylor_potential_evaporation
 
 def iterate_soil_moisture(
         delta_hPa: Union[Raster, np.ndarray], # Rate of change of saturation vapor pressure with temperature (hPa/°C)
@@ -78,7 +79,12 @@ def iterate_soil_moisture(
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)
 
     # Potential evaporation (Priestley-Taylor eqn.)
-    Ep_PT = (1.26 * delta_hPa * Rn_Wm2) / (delta_hPa + gamma_hPa)  
+    Ep_PT = priestley_taylor_potential_evaporation(
+        delta_hPa=delta_hPa,
+        energy_Wm2=Rn_Wm2,
+        alpha=1.26,
+        gamma_hPa=gamma_hPa
+    )
 
     # calculate surface wetness (Ms)
     Ms = rt.where((Ep_PT > Rn_Wm2) & (FVC <= 0.25) & (TdewIndex < 1), Msoil, Ms)
@@ -118,7 +124,12 @@ def iterate_soil_moisture(
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)
 
     # Potential evaporation (Priestley-Taylor eqn.)
-    Ep_PT = (1.26 * delta_hPa * Rn_Wm2) / (delta_hPa + gamma_hPa)  
+    Ep_PT = priestley_taylor_potential_evaporation(
+        delta_hPa=delta_hPa,
+        energy_Wm2=Rn_Wm2,
+        alpha=1.26,
+        gamma_hPa=gamma_hPa
+    )
 
     # COMBINE M to account for Hysteresis and initial estimation of surface vapor pressure
     SM = Msurf
