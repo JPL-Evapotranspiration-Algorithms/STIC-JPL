@@ -2,6 +2,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 RESAMPLING = "cubic"
 CONSTRAIN_NEGATIVE_LE = False
+CONSTRAIN_PET = False
 SUPPLY_SWIN = False
 UPSCALE_TO_DAYLIGHT = False
 

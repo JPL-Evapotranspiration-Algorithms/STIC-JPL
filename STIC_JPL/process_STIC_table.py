@@ -20,6 +20,7 @@ def process_STIC_table(
         max_iterations = MAX_ITERATIONS, 
         use_variable_alpha = USE_VARIABLE_ALPHA,
         constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
+    constrain_PET = CONSTRAIN_PET,
         supply_SWin = SUPPLY_SWIN,
         upscale_to_daylight = UPSCALE_TO_DAYLIGHT,
         offline_mode: bool = False
@@ -35,6 +36,7 @@ def process_STIC_table(
         max_iterations=max_iterations,
         use_variable_alpha=use_variable_alpha,
         constrain_negative_LE=constrain_negative_LE,
+        constrain_PET=constrain_PET,
         supply_SWin=supply_SWin,
         upscale_to_daylight=upscale_to_daylight,
         offline_mode=offline_mode
@@ -46,6 +48,7 @@ def process_STIC_table_single(
         max_iterations = MAX_ITERATIONS, 
         use_variable_alpha = USE_VARIABLE_ALPHA,
         constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
+    constrain_PET = CONSTRAIN_PET,
         supply_SWin = SUPPLY_SWIN,
         upscale_to_daylight = UPSCALE_TO_DAYLIGHT,
         offline_mode: bool = False
@@ -140,6 +143,7 @@ def process_STIC_table_single(
         max_iterations=max_iterations,
         use_variable_alpha=use_variable_alpha,
         constrain_negative_LE=constrain_negative_LE,
+        constrain_PET=constrain_PET,
         upscale_to_daylight=upscale_to_daylight,
         offline_mode=offline_mode
     )

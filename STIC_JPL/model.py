@@ -74,6 +74,7 @@ def STIC_JPL(
         use_variable_alpha: bool = USE_VARIABLE_ALPHA,
         upscale_to_daylight: bool = UPSCALE_TO_DAYLIGHT,
         constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
+        constrain_PET: bool = CONSTRAIN_PET,
         resampling: str = RESAMPLING,
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
@@ -235,7 +236,8 @@ def STIC_JPL(
         Cp_Jkg=Cp_Jkg,
         gB_ms=gB_ms,
         VPD_hPa=VPD_hPa,
-        gamma_hPa=gamma_hPa
+        gamma_hPa=gamma_hPa,
+        constrain_PET=constrain_PET
     )
     
     gR = (4 * SB_SIGMA * (Ta_C + 273) ** 3 * emissivity) / (rho_kgm3 * Cp_Jkg)
@@ -365,7 +367,8 @@ def STIC_JPL(
             Cp_Jkg=Cp_Jkg,
             gB_ms=gB_ms,
             VPD_hPa=VPD_hPa,
-            gamma_hPa=gamma_hPa
+            gamma_hPa=gamma_hPa,
+            constrain_PET=constrain_PET
         )
         
         # Potential Transpiration
@@ -380,6 +383,7 @@ def STIC_JPL(
             SM=SM,
             gB_by_gS=gB_by_gS
         )
+        
         # ET PARTITIONING
         LE_soil_Wm2 = rt.clip(SM * PET_PM_Wm2, 0, None)
         LE_canopy_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
@@ -411,7 +415,7 @@ def STIC_JPL(
     results["LE_change"] = LE_Wm2_change
     results["LE_soil_Wm2"] = LE_soil_Wm2
     results["LE_canopy_Wm2"] = LE_canopy_Wm2
-    results["PT"] = potential_transpiration_Wm2
+    results["potential_transpiration_Wm2"] = potential_transpiration_Wm2
     results["PET_Wm2"] = PET_PM_Wm2
     results["G_Wm2"] = G_Wm2
 

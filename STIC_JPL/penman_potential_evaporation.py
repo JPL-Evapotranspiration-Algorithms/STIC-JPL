@@ -1,6 +1,7 @@
 from typing import Union
 
 import numpy as np
+import rasters as rt
 
 from rasters import Raster
 
@@ -14,8 +15,11 @@ def penman_potential_evaporation(
         Cp_Jkg: Union[Raster, np.ndarray],
         gB_ms: Union[Raster, np.ndarray],
         VPD_hPa: Union[Raster, np.ndarray],
-        gamma_hPa: Union[Raster, np.ndarray, float] = GAMMA_HPA
-    ) -> Union[Raster, np.ndarray]:
+        gamma_hPa: Union[Raster, np.ndarray, float] = GAMMA_HPA,
+        constrain_PET: bool = False,
+        denominator_floor: float = 1e-6,
+        PET_energy_cap_factor: float = 1.0
+        ) -> Union[Raster, np.ndarray]:
         """
         Compute potential evaporation as latent heat flux using a Penman-type formulation.
 
@@ -51,8 +55,23 @@ def penman_potential_evaporation(
                 gB_ms: Boundary-layer conductance [m s^-1].
                 VPD_hPa: Atmospheric vapor pressure deficit [hPa].
                 gamma_hPa: Psychrometric constant [hPa K^-1].
+                constrain_PET: If True, apply optional physical constraints to PET.
+                denominator_floor: Minimum value enforced on (delta + gamma) to avoid numerical blow-up.
+                PET_energy_cap_factor: Multiplier for available-energy cap when constraining PET.
 
         Returns:
                 Potential evaporation as latent heat flux [W m^-2], preserving input array/raster shape.
         """
-        return (delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa)
+        denominator = delta_hPa + gamma_hPa
+
+        if constrain_PET:
+            denominator = rt.where(denominator < denominator_floor, denominator_floor, denominator)
+
+        PET_Wm2 = (delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / denominator
+
+        if constrain_PET:
+            PET_Wm2 = rt.where(PET_Wm2 < 0, 0, PET_Wm2)
+            PET_cap_Wm2 = PET_energy_cap_factor * rt.where(phi_Wm2 < 0, 0, phi_Wm2)
+            PET_Wm2 = rt.where(PET_Wm2 > PET_cap_Wm2, PET_cap_Wm2, PET_Wm2)
+
+        return PET_Wm2
