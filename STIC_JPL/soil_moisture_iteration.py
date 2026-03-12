@@ -79,7 +79,7 @@ def iterate_soil_moisture(
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)
 
     # Potential evaporation (Priestley-Taylor eqn.)
-    Ep_PT = priestley_taylor_potential_evaporation(
+    PET_PT_Wm2 = priestley_taylor_potential_evaporation(
         delta_hPa=delta_hPa,
         energy_Wm2=Rn_Wm2,
         alpha=1.26,
@@ -87,17 +87,17 @@ def iterate_soil_moisture(
     )
 
     # calculate surface wetness (Ms)
-    Ms = rt.where((Ep_PT > Rn_Wm2) & (FVC <= 0.25) & (TdewIndex < 1), Msoil, Ms)
+    Ms = rt.where((PET_PT_Wm2 > Rn_Wm2) & (FVC <= 0.25) & (TdewIndex < 1), Msoil, Ms)
     Ms = rt.where((FVC <= 0.25) & (Ta_C > 10) & (Td_C < 0) & (LWnet_Wm2 < -125), Msoil, Ms)
-    Ms = rt.where((Rn_Wm2 > Ep_PT) & (FVC <= 0.25) & (TdewIndex < 1) & (Td_C <= 0), Msoil, Ms)
-    Ms = rt.where((Rn_Wm2 > Ep_PT) & (FVC <= 0.25) & (TdewIndex < 1), Msoil, Ms)
+    Ms = rt.where((Rn_Wm2 > PET_PT_Wm2) & (FVC <= 0.25) & (TdewIndex < 1) & (Td_C <= 0), Msoil, Ms)
+    Ms = rt.where((Rn_Wm2 > PET_PT_Wm2) & (FVC <= 0.25) & (TdewIndex < 1), Msoil, Ms)
     Ms = rt.where((D0_hPa > VPD_hPa) & (FVC <= 0.25) & (TdewIndex < 1), Msoil, Ms)
 
     # calculate canopy wetness (Mcan)
-    Mcan = rt.where((Ep_PT > Rn_Wm2) & (FVC <= 0.25) & (TdewIndex < 1), 0, Mcan)
+    Mcan = rt.where((PET_PT_Wm2 > Rn_Wm2) & (FVC <= 0.25) & (TdewIndex < 1), 0, Mcan)
     Mcan = rt.where((FVC <= 0.25) & (Ta_C > 10) & (Td_C < 0) & (LWnet_Wm2 < -125), 0, Mcan)
-    Mcan = rt.where((Rn_Wm2 > Ep_PT) & (FVC <= 0.25) & (TdewIndex < 1) & (Td_C <= 0), 0, Mcan)
-    Mcan = rt.where((Rn_Wm2 > Ep_PT) & (FVC <= 0.25) & (TdewIndex < 1), 0, Mcan)
+    Mcan = rt.where((Rn_Wm2 > PET_PT_Wm2) & (FVC <= 0.25) & (TdewIndex < 1) & (Td_C <= 0), 0, Mcan)
+    Mcan = rt.where((Rn_Wm2 > PET_PT_Wm2) & (FVC <= 0.25) & (TdewIndex < 1), 0, Mcan)
     Mcan = rt.where((D0_hPa > VPD_hPa) & (FVC <= 0.25) & (TdewIndex < 1), 0, Mcan)
 
     # calculate rootzone moisture (Mrz)
@@ -124,7 +124,7 @@ def iterate_soil_moisture(
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)
 
     # Potential evaporation (Priestley-Taylor eqn.)
-    Ep_PT = priestley_taylor_potential_evaporation(
+    PET_PT_Wm2 = priestley_taylor_potential_evaporation(
         delta_hPa=delta_hPa,
         energy_Wm2=Rn_Wm2,
         alpha=1.26,
@@ -133,7 +133,7 @@ def iterate_soil_moisture(
 
     # COMBINE M to account for Hysteresis and initial estimation of surface vapor pressure
     SM = Msurf
-    SM = rt.where((Ep_PT > Rn_Wm2) & (dTS_C > 0) & (FVC <= 0.25) & (D0_hPa > VPD_hPa) & (TdewIndex < 1), Mrz, SM)
+    SM = rt.where((PET_PT_Wm2 > Rn_Wm2) & (dTS_C > 0) & (FVC <= 0.25) & (D0_hPa > VPD_hPa) & (TdewIndex < 1), Mrz, SM)
     SM = rt.where((FVC <= 0.25) & (dTS_C > 0) & (Ta_C > 10) & (Td_C < 0) & (LWnet_Wm2 < -125) & (D0_hPa > VPD_hPa), Mrz, SM)
 
     return SM

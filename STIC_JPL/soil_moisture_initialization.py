@@ -75,7 +75,8 @@ def initialize_soil_moisture(
     Msoil = (1 - FVC) * Msurf
 
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)  # % TdewIndex > 1 signifies super dry condition
-    Ep_PT = priestley_taylor_potential_evaporation(
+    
+    PET_PT_Wm2 = priestley_taylor_potential_evaporation(
         delta_hPa=delta_hPa,
         energy_Wm2=Rn_Wm2,
         alpha=1.26,
@@ -103,12 +104,12 @@ def initialize_soil_moisture(
 
     # Combine soil moisture to account for hysteresis and initial estimation of surface vapor pressure
     SM = Ms
-    SM = rt.where((Ep_PT > Rn_Wm2) & (dTS > 0), SMrz, SM)
-    SM = rt.where((Ep_PT > Rn_Wm2) & (FVC <= 0.25), SMrz, SM)
-    SM = rt.where((Ep_PT > Rn_Wm2) & (Dsurf > VPD_hPa), SMrz, SM)
+    SM = rt.where((PET_PT_Wm2 > Rn_Wm2) & (dTS > 0), SMrz, SM)
+    SM = rt.where((PET_PT_Wm2 > Rn_Wm2) & (FVC <= 0.25), SMrz, SM)
+    SM = rt.where((PET_PT_Wm2 > Rn_Wm2) & (Dsurf > VPD_hPa), SMrz, SM)
     SM = rt.where((FVC <= 0.25) & (dTS > 0) & (Ta_C > 10) & (Td_C < 0) & (LWnet_Wm2 < -125), SMrz, SM)
     SM = rt.where((FVC <= 0.25) & (dTS > 0) & (Ta_C > 10) & (Td_C < 0) & (Dsurf > VPD_hPa), SMrz, SM)
-    SM = rt.where((Ep_PT < Rn_Wm2) & (FVC <= 0.25) & (Dsurf > VPD_hPa), SMrz, SM)
+    SM = rt.where((PET_PT_Wm2 < Rn_Wm2) & (FVC <= 0.25) & (Dsurf > VPD_hPa), SMrz, SM)
     
     es = Ea_hPa + SM * (Estar_hPa - Ea_hPa)
     
@@ -118,4 +119,4 @@ def initialize_soil_moisture(
     s1 = s11
     s3 = s33
 
-    return SM, SMrz, Ms, Ep_PT, Ds, s1, s3, Tsd_C
+    return SM, SMrz, Ms, PET_PT_Wm2, Ds, s1, s3, Tsd_C
