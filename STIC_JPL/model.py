@@ -29,7 +29,6 @@ from .exceptions import MissingOfflineParameter
 from .closure import STIC_closure
 from .soil_moisture_initialization import initialize_soil_moisture
 from .soil_moisture_iteration import iterate_soil_moisture
-from .net_radiation import calculate_net_longwave_radiation
 from .initialize_with_solar import initialize_with_solar
 from .canopy_air_stream import calculate_canopy_air_stream_vapor_pressure
 from .initialize_without_solar import initialize_without_solar
