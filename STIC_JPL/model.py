@@ -16,6 +16,7 @@ import rasters as rt
 from GEOS5FP import GEOS5FP
 from solar_apparent_time import calculate_solar_day_of_year, calculate_solar_hour_of_day
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from santanello_soil_heat_flux import santanello_soil_heat_flux
 
 from rasters import Raster, RasterGeometry
 
@@ -200,7 +201,7 @@ def STIC_JPL(
             LAI = LAI,  # leaf area index
             albedo = albedo,  # albedo of the surface
             gamma_hPa=gamma_hPa,  # psychrometric constant (hPa/°C)
-            G_method = DEFAULT_G_METHOD,  # method for calculating soil heat flux
+            G_method = G_method,  # method for calculating soil heat flux
         )
     
     check_distribution(Ms, "Ms")
@@ -258,6 +259,7 @@ def STIC_JPL(
         logger.info(f"running STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)}")
 
         if SWin_Wm2 is None:
+            logger.info("iterating without solar")
             SM, SMrz, Ms, s1, e0, e0star, Tsd_C, D0, alphaN = iterate_without_solar(
                 LE = LE_Wm2_new,  # Latent heat flux (W/m^2)
                 PET = PET_Wm2,  # Potential evapotranspiration (W/m^2)
@@ -284,6 +286,7 @@ def STIC_JPL(
                 Cp_Jkg = Cp_Jkg  # Specific heat at constant pressure (J/kg/K)
             )
         else:
+            logger.info("iterating with solar")
             SM, G_Wm2, e0, e0star, D0, alphaN = iterate_with_solar(
                 seconds_of_day = seconds_of_day,  # Seconds of the day
                 ST_C = ST_C,  # Soil temperature (°C)
@@ -314,8 +317,10 @@ def STIC_JPL(
                 gamma_hPa = gamma_hPa,  # Psychrometric constant (hPa/°C)
                 rho_kgm3 = rho_kgm3,  # Air density (kg/m^3)
                 Cp_Jkg = Cp_Jkg,  # Specific heat at constant pressure (J/kg/K)
-                G_method = "santanello"  # Method for calculating soil heat flux
+                G_method = G_method  # Method for calculating soil heat flux
             )
+
+        phi_Wm2 = Rn_Wm2 - G_Wm2
 
         if use_variable_alpha:
             alpha = alphaN
@@ -360,7 +365,7 @@ def STIC_JPL(
         LE_Wm2_max_change = np.nanmax(LE_Wm2_change)
         logger.info(
             f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t.tocvalue()} seconds)")
-        
+
         check_distribution(SM, f"SM_{iteration}")
         check_distribution(G_Wm2, f"G_{iteration}")
         check_distribution(LE_Wm2_new, f"LE_{iteration}")

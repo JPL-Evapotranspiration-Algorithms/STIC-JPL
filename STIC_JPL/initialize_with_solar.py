@@ -6,6 +6,7 @@ import rasters as rt
 from rasters import Raster
 
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from santanello_soil_heat_flux import santanello_soil_heat_flux
 
 from .constants import *
 from .soil_moisture_initialization import initialize_soil_moisture
@@ -33,6 +34,14 @@ def initialize_with_solar(
         gamma_hPa: Union[Raster, np.ndarray, float] = GAMMA_HPA,  # psychrometric constant (hPa/°C)
         G_method: str = DEFAULT_G_METHOD  # method for calculating soil heat flux
     ) -> Tuple[Union[Raster, np.ndarray]]:
+
+    VALID_G_METHODS = {"santanello", "sebal"}
+
+    if G_method.lower() not in VALID_G_METHODS:
+        raise ValueError(
+            f"invalid G_method '{G_method}': must be one of {sorted(VALID_G_METHODS)}"
+        )
+
     # Rn SOIL
     kRN = 0.6
     Rn_soil = Rn_Wm2 * np.exp(-kRN * LAI)
@@ -63,12 +72,17 @@ def initialize_with_solar(
     )
 
     # calculate soil heat flux
-    G = calculate_SEBAL_soil_heat_flux(
-        ST_C=ST_C,  # Surface temperature in Celsius
-        NDVI=NDVI,  # Normalized Difference Vegetation Index
-        albedo=albedo,  # Albedo of the surface
-        Rn=Rn_Wm2  # Net radiation (W/m^2)
-    )
+    if G_method.lower() == "santanello":
+               # calculate soil heat flux
+        G = santanello_soil_heat_flux(seconds_of_day, Rn_Wm2, SM)
+    else:
+        # calculate soil heat flux
+        G = calculate_SEBAL_soil_heat_flux(
+            ST_C=ST_C,
+            NDVI=NDVI,
+            albedo=albedo,
+            Rn=Rn_Wm2
+        )
 
     # get phi with new comp
     phi = Rn_Wm2 - G
