@@ -87,16 +87,19 @@ def STIC_JPL(
     LE_daylight_Wm2 = None
     ET_daily_kg = None
 
+    if configuration is None:
+        configuration = "ECOv003"
+
     if LE_convergence_target is None:
         if configuration == "ECOv002":
             LE_convergence_target = ECOv002_LE_CONVERGENCE_TARGET_WM2
-        else:
+        elif configuration == "ECOv003":
             LE_convergence_target = LE_CONVERGENCE_TARGET_WM2
 
     if max_iterations is None:
         if configuration == "ECOv002":
             max_iterations = ECOv002_MAX_ITERATIONS
-        else:
+        elif configuration == "ECOv003":
             max_iterations = MAX_ITERATIONS
 
     if geometry is None and isinstance(ST_C, Raster):
