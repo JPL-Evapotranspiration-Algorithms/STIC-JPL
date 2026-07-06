@@ -97,7 +97,7 @@ def process_STIC_table_single(
 
     input_df = ensure_geometry(input_df)
 
-    logger.info("started extracting geometry from PT-JPL-SM input table")
+    logger.info("started extracting geometry from STIC-JPL input table")
 
     if "geometry" in input_df:
         # Convert Point objects to coordinate tuples for MultiPoint
@@ -113,9 +113,9 @@ def process_STIC_table_single(
     else:
         raise KeyError("Input DataFrame must contain either 'geometry' or both 'lat' and 'lon' columns.")
 
-    logger.info("completed extracting geometry from PT-JPL-SM input table")
+    logger.info("completed extracting geometry from STIC-JPL input table")
 
-    logger.info("started extracting time from PT-JPL-SM input table")
+    logger.info("started extracting time from STIC-JPL input table")
     
     # Handle time conversion - for single row, extract single datetime; for multiple rows, use list
     if len(input_df) == 1:
@@ -123,7 +123,7 @@ def process_STIC_table_single(
     else:
         time_UTC = pd.to_datetime(input_df.time_UTC).tolist()
     
-    logger.info("completed extracting time from PT-JPL-SM input table")
+    logger.info("completed extracting time from STIC-JPL input table")
     
     results = STIC_JPL(
         geometry=geometry,
