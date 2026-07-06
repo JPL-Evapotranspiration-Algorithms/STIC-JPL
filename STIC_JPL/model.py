@@ -37,8 +37,6 @@ from .iterate_without_solar import iterate_without_solar
 from .root_zone_initialization import calculate_root_zone_moisture
 from .penman_potential_evaporation import penman_potential_evaporation
 from .penman_potential_transpiration import penman_potential_transpiration
-from .FVC_from_NDVI import FVC_from_NDVI
-from .LAI_from_NDVI import LAI_from_NDVI
 from .celcius_to_kelvin import celcius_to_kelvin
 
 __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
