@@ -4,9 +4,6 @@ import numpy as np
 import rasters as rt
 from rasters import Raster
 
-from .FVC_from_NDVI import FVC_from_NDVI
-from .LAI_from_NDVI import LAI_from_NDVI
-
 from .constants import GAMMA_HPA
 from .root_zone_initialization import calculate_root_zone_moisture
 from .priestley_taylor_potential_evaporation import priestley_taylor_potential_evaporation

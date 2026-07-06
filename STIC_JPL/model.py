@@ -21,12 +21,14 @@ from rasters import Raster, RasterGeometry
 
 from daylight_evapotranspiration import daylight_ET_from_instantaneous_LE
 
+from carlson_fractional_vegetation_cover import carlson_fractional_vegetation_cover
+from carlson_leaf_area_index import carlson_leaf_area_index
+
 from .constants import *
 from .exceptions import MissingOfflineParameter
 from .closure import STIC_closure
 from .soil_moisture_initialization import initialize_soil_moisture
 from .soil_moisture_iteration import iterate_soil_moisture
-from .net_radiation import calculate_net_longwave_radiation
 from .initialize_with_solar import initialize_with_solar
 from .canopy_air_stream import calculate_canopy_air_stream_vapor_pressure
 from .initialize_without_solar import initialize_without_solar
@@ -123,11 +125,11 @@ def STIC_JPL(
 
     # calculate fraction of vegetation cover if it's not given
     if FVC is None:
-        FVC = FVC_from_NDVI(NDVI)
+        FVC = carlson_fractional_vegetation_cover(NDVI)
     
     # calculate leaf area index if it's not given
     if LAI is None:
-        LAI = LAI_from_NDVI(NDVI)
+        LAI = carlson_leaf_area_index(NDVI)
 
     # saturation air pressure in hPa
     SVP_hPa = 6.13753 * (np.exp((17.27 * Ta_C) / (Ta_C + 237.3)))

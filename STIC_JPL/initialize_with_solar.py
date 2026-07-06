@@ -9,7 +9,7 @@ from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from .constants import *
 from .soil_moisture_initialization import initialize_soil_moisture
-from .net_radiation import calculate_net_longwave_radiation
+from .net_longwave_radiation import calculate_net_longwave_radiation
 
 
 def initialize_with_solar(
@@ -31,7 +31,8 @@ def initialize_with_solar(
         LAI: Union[Raster, np.ndarray],  # leaf area index
         albedo: Union[Raster, np.ndarray],  # albedo of the surface
         gamma_hPa: Union[Raster, np.ndarray, float] = GAMMA_HPA,  # psychrometric constant (hPa/°C)
-        G_method: str = DEFAULT_G_METHOD  # method for calculating soil heat flux
+        G_method: str = DEFAULT_G_METHOD,  # method for calculating soil heat flux
+        apply_surface_emissivity_to_LWin: bool = False  # whether to apply surface emissivity to incoming longwave radiation
     ) -> Tuple[Union[Raster, np.ndarray]]:
     # Rn SOIL
     kRN = 0.6
@@ -42,7 +43,7 @@ def initialize_with_solar(
         Ea_hPa=Ea_hPa, 
         ST_C=ST_C, 
         emissivity=emissivity, 
-        albedo=albedo
+        apply_surface_emissivity_to_LWin=apply_surface_emissivity_to_LWin
     )
     
     # initialize soil moisture
