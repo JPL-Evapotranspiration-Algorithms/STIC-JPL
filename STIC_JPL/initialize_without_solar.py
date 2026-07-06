@@ -5,6 +5,7 @@ import rasters as rt
 from rasters import Raster
 
 from .constants import *
+from .priestley_taylor_potential_evaporation import priestley_taylor_potential_evaporation
 
 def initialize_without_solar(
             ST_C: Union[Raster, np.ndarray],  # Surface temperature in Celsius
@@ -71,7 +72,12 @@ def initialize_without_solar(
       # now the limits of both Ms and Mrz are consistent
       # combine M to account for Hysteresis and initial estimation of surface vapor pressure
       # Potential evaporation (Priestley-Taylor eqn.)
-      Ep_PT = (alpha * delta_hPa * phi_Wm2) / (delta_hPa + gamma_hPa)
+      Ep_PT = priestley_taylor_potential_evaporation(
+            delta_hPa=delta_hPa,
+            energy_Wm2=phi_Wm2,
+            alpha=alpha,
+            gamma_hPa=gamma_hPa
+      )
       Es = rt.where((Ep_PT > phi_Wm2) & (dTS > 0) & (Td_C <= 0), Ea_hPa + SMrz * (Estar_hPa - Ea_hPa),
             Ea_hPa + Ms * (Estar_hPa - Ea_hPa))
 

@@ -35,6 +35,10 @@ from .initialize_without_solar import initialize_without_solar
 from .iterate_with_solar import iterate_with_solar
 from .iterate_without_solar import iterate_without_solar
 from .root_zone_initialization import calculate_root_zone_moisture
+from .penman_potential_evaporation import penman_potential_evaporation
+from .penman_potential_transpiration import penman_potential_transpiration
+from .FVC_from_NDVI import FVC_from_NDVI
+from .LAI_from_NDVI import LAI_from_NDVI
 from .celcius_to_kelvin import celcius_to_kelvin
 
 __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
@@ -72,6 +76,7 @@ def STIC_JPL(
         use_variable_alpha: bool = USE_VARIABLE_ALPHA,
         upscale_to_daylight: bool = UPSCALE_TO_DAYLIGHT,
         constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
+        constrain_PET: bool = CONSTRAIN_PET,
         resampling: str = RESAMPLING,
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
@@ -226,14 +231,23 @@ def STIC_JPL(
     dT_C = dT_C
     T0_C = dT_C + Ta_C
     
-    PET_Wm2 = ((delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa))  # Penman potential evaporation
+    PET_PM_Wm2 = penman_potential_evaporation(
+        delta_hPa=delta_hPa,
+        phi_Wm2=phi_Wm2,
+        rho_kgm3=rho_kgm3,
+        Cp_Jkg=Cp_Jkg,
+        gB_ms=gB_ms,
+        VPD_hPa=VPD_hPa,
+        gamma_hPa=gamma_hPa,
+        constrain_PET=constrain_PET
+    )
     
     gR = (4 * SB_SIGMA * (Ta_C + 273) ** 3 * emissivity) / (rho_kgm3 * Cp_Jkg)
     omega = ((delta_hPa / gamma_hPa) + 1) / ((delta_hPa / gamma_hPa) + 1 + gB_by_gS)
     LE_eq = (phi_Wm2 * (delta_hPa / gamma_hPa)) / ((delta_hPa / gamma_hPa) + 1)
     LE_imp = (Cp_Jkg * 0.0289644 / gamma_hPa) * gS_ms * 40 * VPD_hPa
     LE_init = omega * LE_eq + (1 - omega) * LE_imp
-    dry = (Ds > VPD_hPa) & (PET_Wm2 > phi_Wm2) & (dTS_C > 0) & (Td_C <= 0)
+    dry = (Ds > VPD_hPa) & (PET_PM_Wm2 > phi_Wm2) & (dTS_C > 0) & (Td_C <= 0)
     omega = rt.where(dry,
                         ((delta_hPa / gamma_hPa) + 1 + gR / gB_ms) / ((delta_hPa / gamma_hPa) + 1 + gB_ms / gS_ms + gR / gS_ms + gR / gB_ms),
                         omega)
@@ -247,7 +261,7 @@ def STIC_JPL(
     LE_Wm2_change = LE_convergence_target
     LE_Wm2_old = LE_Wm2_new
     LE_canopy_Wm2 = None
-    PT_Wm2 = None
+    potential_transpiration_Wm2 = None
     iteration = 1
     LE_Wm2_max_change = 0
 
@@ -260,7 +274,7 @@ def STIC_JPL(
         if SWin_Wm2 is None:
             SM, SMrz, Ms, s1, e0, e0star, Tsd_C, D0, alphaN = iterate_without_solar(
                 LE = LE_Wm2_new,  # Latent heat flux (W/m^2)
-                PET = PET_Wm2,  # Potential evapotranspiration (W/m^2)
+                PET = PET_PM_Wm2,  # Potential evapotranspiration (W/m^2)
                 SM = SM,
                 ST_C = ST_C,  # Surface temperature (°C)
                 Ta_C = Ta_C,  # Air temperature (°C)
@@ -346,18 +360,41 @@ def STIC_JPL(
 
         # Sensible Heat Flux
         H_Wm2 = ((gamma_hPa * phi_Wm2 * (1 + gB_by_gS) - rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + (gB_by_gS))))
-        # potential evaporation (Penman)
-        PET_Wm2 = ((delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa))
+        
+        # calculate potential evaporation with Penman-Monteith using updated states and conductances
+        PET_PM_Wm2 = penman_potential_evaporation(
+            delta_hPa=delta_hPa,
+            phi_Wm2=phi_Wm2,
+            rho_kgm3=rho_kgm3,
+            Cp_Jkg=Cp_Jkg,
+            gB_ms=gB_ms,
+            VPD_hPa=VPD_hPa,
+            gamma_hPa=gamma_hPa,
+            constrain_PET=constrain_PET
+        )
+        
         # Potential Transpiration
-        PT_Wm2 = (delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + SM * gB_by_gS))  # potential transpiration
+        potential_transpiration_Wm2 = penman_potential_transpiration(
+            delta_hPa=delta_hPa,
+            phi_Wm2=phi_Wm2,
+            rho_kgm3=rho_kgm3,
+            Cp_Jkg=Cp_Jkg,
+            gB_ms=gB_ms,
+            VPD_hPa=VPD_hPa,
+            gamma_hPa=gamma_hPa,
+            SM=SM,
+            gB_by_gS=gB_by_gS
+        )
+        
         # ET PARTITIONING
-        LE_soil_Wm2 = rt.clip(SM * PET_Wm2, 0, None)
+        LE_soil_Wm2 = rt.clip(SM * PET_PM_Wm2, 0, None)
         LE_canopy_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
         # change in latent heat flux estimate
         LE_Wm2_change = np.abs(LE_Wm2_old - LE_Wm2_new)
         LE_Wm2_new = rt.where(np.isnan(LE_Wm2_new), LE_Wm2_old, LE_Wm2_new)
         LE_Wm2_old = LE_Wm2_new
         LE_Wm2_max_change = np.nanmax(LE_Wm2_change)
+        
         logger.info(
             f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t.tocvalue()} seconds)")
         
@@ -380,8 +417,8 @@ def STIC_JPL(
     results["LE_change"] = LE_Wm2_change
     results["LE_soil_Wm2"] = LE_soil_Wm2
     results["LE_canopy_Wm2"] = LE_canopy_Wm2
-    results["PT"] = PT_Wm2
-    results["PET_Wm2"] = PET_Wm2
+    results["potential_transpiration_Wm2"] = potential_transpiration_Wm2
+    results["PET_Wm2"] = PET_PM_Wm2
     results["G_Wm2"] = G_Wm2
 
     if isinstance(geometry, RasterGeometry):
