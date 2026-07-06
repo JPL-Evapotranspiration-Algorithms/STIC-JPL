@@ -70,14 +70,15 @@ def STIC_JPL(
         rho_kgm3: Union[Raster, np.ndarray] = RHO_KGM3,
         Cp_Jkg: Union[Raster, np.ndarray] = CP_JKG,
         alpha: float = PT_ALPHA,
-        LE_convergence_target: float = LE_CONVERGENCE_TARGET_WM2,
-        max_iterations: int = MAX_ITERATIONS,
+        LE_convergence_target: float = None,
+        max_iterations: int = None,
         show_distributions: bool = SHOW_DISTRIBUTIONS,
         use_variable_alpha: bool = USE_VARIABLE_ALPHA,
         upscale_to_daylight: bool = UPSCALE_TO_DAYLIGHT,
         constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
         constrain_PET: bool = CONSTRAIN_PET,
         resampling: str = RESAMPLING,
+        configuration: str = "ECOv003",
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
@@ -85,6 +86,18 @@ def STIC_JPL(
     EF = None
     LE_daylight_Wm2 = None
     ET_daily_kg = None
+
+    if LE_convergence_target is None:
+        if configuration == "ECOv002":
+            LE_convergence_target = ECOv002_LE_CONVERGENCE_TARGET_WM2
+        else:
+            LE_convergence_target = LE_CONVERGENCE_TARGET_WM2
+
+    if max_iterations is None:
+        if configuration == "ECOv002":
+            max_iterations = ECOv002_MAX_ITERATIONS
+        else:
+            max_iterations = MAX_ITERATIONS
 
     if geometry is None and isinstance(ST_C, Raster):
         geometry = ST_C.geometry
