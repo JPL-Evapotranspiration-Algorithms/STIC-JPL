@@ -1,4 +1,4 @@
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 import logging
 from datetime import datetime, timedelta
 from os.path import join, abspath, expanduser
@@ -43,6 +43,39 @@ __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
 
 logger = logging.getLogger(__name__)
 
+
+def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str, bool, int, float]]:
+    resolved_configuration = configuration or DEFAULT_CONFIGURATION
+
+    if resolved_configuration not in {"ECOv002", "ECOv003"}:
+        logger.warning(
+            "unsupported configuration '%s'; falling back to %s",
+            resolved_configuration,
+            DEFAULT_CONFIGURATION,
+        )
+        resolved_configuration = DEFAULT_CONFIGURATION
+
+    if resolved_configuration == "ECOv002":
+        return {
+            "configuration": resolved_configuration,
+            "LE_convergence_target": ECOv002_LE_CONVERGENCE_TARGET_WM2,
+            "max_iterations": ECOv002_MAX_ITERATIONS,
+            "g_method": ECOv002_G_METHOD,
+            "constrain_negative_LE": ECOv002_CONSTRAIN_NEGATIVE_LE,
+            "constrain_PET": ECOv002_CONSTRAIN_PET,
+            "apply_surface_emissivity_to_LWin": ECOv002_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+        }
+
+    return {
+        "configuration": resolved_configuration,
+        "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
+        "max_iterations": MAX_ITERATIONS,
+        "g_method": ECOv003_G_METHOD,
+        "constrain_negative_LE": ECOv003_CONSTRAIN_NEGATIVE_LE,
+        "constrain_PET": ECOv003_CONSTRAIN_PET,
+        "apply_surface_emissivity_to_LWin": ECOv003_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+    }
+
 def STIC_JPL(
         ST_C: Union[Raster, np.ndarray],
         emissivity: Union[Raster, np.ndarray],
@@ -57,7 +90,7 @@ def STIC_JPL(
         Ta_C: Union[Raster, np.ndarray] = None,
         RH: Union[Raster, np.ndarray] = None,
         G_Wm2: Union[Raster, np.ndarray] = None,
-        G_method: str = DEFAULT_G_METHOD,
+        G_method: Optional[str] = None,
         SM: Union[Raster, np.ndarray] = None,
         SWin_Wm2: Union[Raster, np.ndarray] = None,
         FVC: Union[Raster, np.ndarray] = None,
@@ -73,10 +106,11 @@ def STIC_JPL(
         show_distributions: bool = SHOW_DISTRIBUTIONS,
         use_variable_alpha: bool = USE_VARIABLE_ALPHA,
         upscale_to_daylight: bool = UPSCALE_TO_DAYLIGHT,
-        constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
-        constrain_PET: bool = CONSTRAIN_PET,
+        constrain_negative_LE: Optional[bool] = None,
+        constrain_PET: Optional[bool] = None,
         resampling: str = RESAMPLING,
-        configuration: str = "ECOv003",
+        configuration: str = DEFAULT_CONFIGURATION,
+        apply_surface_emissivity_to_LWin: Optional[bool] = None,
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
@@ -85,20 +119,31 @@ def STIC_JPL(
     LE_daylight_Wm2 = None
     ET_daily_kg = None
 
-    if configuration is None:
-        configuration = "ECOv003"
+    mode_defaults = _resolve_mode_defaults(configuration)
+    configuration = mode_defaults["configuration"]
 
     if LE_convergence_target is None:
-        if configuration == "ECOv002":
-            LE_convergence_target = ECOv002_LE_CONVERGENCE_TARGET_WM2
-        elif configuration == "ECOv003":
-            LE_convergence_target = LE_CONVERGENCE_TARGET_WM2
+        LE_convergence_target = mode_defaults["LE_convergence_target"]
 
     if max_iterations is None:
-        if configuration == "ECOv002":
-            max_iterations = ECOv002_MAX_ITERATIONS
-        elif configuration == "ECOv003":
-            max_iterations = MAX_ITERATIONS
+        max_iterations = mode_defaults["max_iterations"]
+
+    if G_method is None:
+        G_method = mode_defaults["g_method"]
+
+    G_method = G_method.lower().strip()
+
+    if G_method not in {"sebal", "santanello"}:
+        raise ValueError(f"unsupported soil heat flux method: {G_method}")
+
+    if constrain_negative_LE is None:
+        constrain_negative_LE = mode_defaults["constrain_negative_LE"]
+
+    if constrain_PET is None:
+        constrain_PET = mode_defaults["constrain_PET"]
+
+    if apply_surface_emissivity_to_LWin is None:
+        apply_surface_emissivity_to_LWin = mode_defaults["apply_surface_emissivity_to_LWin"]
 
     if geometry is None and isinstance(ST_C, Raster):
         geometry = ST_C.geometry
@@ -171,11 +216,19 @@ def STIC_JPL(
     # saturation vapor pressure at surface temperature (hPa/K)
     Estar_hPa = 6.13753 * np.exp((17.27 * ST_C) / (ST_C + 237.3))
 
+    if configuration == "ECOv002" and SWin_Wm2 is None:
+        logger.warning("ECOv002 mode requested without SWin_Wm2; using no-SWin pathway")
+
     if SWin_Wm2 is None:
         # if G is None and SM is None:
         #     raise ValueError("soil heat flux or soil moisture prior required if solar radiation is not given")
 
         if G_Wm2 is None:
+            if G_method == "santanello":
+                raise NotImplementedError(
+                    "G_method='santanello' is not implemented for no-SWin mode; provide SWin_Wm2, provide G_Wm2, or set G_method='sebal'"
+                )
+
             G_Wm2 = calculate_SEBAL_soil_heat_flux(
                 ST_C=ST_C,
                 NDVI=NDVI,
@@ -219,7 +272,8 @@ def STIC_JPL(
             LAI = LAI,  # leaf area index
             albedo = albedo,  # albedo of the surface
             gamma_hPa=gamma_hPa,  # psychrometric constant (hPa/°C)
-            G_method = DEFAULT_G_METHOD,  # method for calculating soil heat flux
+            G_method = G_method,  # method for calculating soil heat flux
+            apply_surface_emissivity_to_LWin=apply_surface_emissivity_to_LWin,
         )
     
     check_distribution(Ms, "Ms")
@@ -342,7 +396,7 @@ def STIC_JPL(
                 gamma_hPa = gamma_hPa,  # Psychrometric constant (hPa/°C)
                 rho_kgm3 = rho_kgm3,  # Air density (kg/m^3)
                 Cp_Jkg = Cp_Jkg,  # Specific heat at constant pressure (J/kg/K)
-                G_method = "santanello"  # Method for calculating soil heat flux
+                G_method = G_method  # Method for calculating soil heat flux
             )
 
         if use_variable_alpha:

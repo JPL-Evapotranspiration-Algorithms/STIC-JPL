@@ -12,6 +12,31 @@ from .soil_moisture_initialization import initialize_soil_moisture
 from .net_longwave_radiation import calculate_net_longwave_radiation
 
 
+def _calculate_soil_heat_flux(
+        G_method: str,
+        ST_C: Union[Raster, np.ndarray],
+        NDVI: Union[Raster, np.ndarray],
+        albedo: Union[Raster, np.ndarray],
+        Rn_Wm2: Union[Raster, np.ndarray]
+    ) -> Union[Raster, np.ndarray]:
+    method = (G_method or "").lower().strip()
+
+    if method == "sebal":
+        return calculate_SEBAL_soil_heat_flux(
+            ST_C=ST_C,
+            NDVI=NDVI,
+            albedo=albedo,
+            Rn=Rn_Wm2,
+        )
+
+    if method == "santanello":
+        raise NotImplementedError(
+            "G_method='santanello' is not implemented in initialize_with_solar"
+        )
+
+    raise ValueError(f"unsupported soil heat flux method: {G_method}")
+
+
 def initialize_with_solar(
         seconds_of_day: Union[Raster, np.ndarray],  # time of day in seconds since midnight
         Rg_Wm2: Union[Raster, np.ndarray],  # solar radiation (W/m^2)
@@ -64,11 +89,12 @@ def initialize_with_solar(
     )
 
     # calculate soil heat flux
-    G = calculate_SEBAL_soil_heat_flux(
-        ST_C=ST_C,  # Surface temperature in Celsius
-        NDVI=NDVI,  # Normalized Difference Vegetation Index
-        albedo=albedo,  # Albedo of the surface
-        Rn=Rn_Wm2  # Net radiation (W/m^2)
+    G = _calculate_soil_heat_flux(
+        G_method=G_method,
+        ST_C=ST_C,
+        NDVI=NDVI,
+        albedo=albedo,
+        Rn_Wm2=Rn_Wm2,
     )
 
     # get phi with new comp

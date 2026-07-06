@@ -1,0 +1,63 @@
+import numpy as np
+import pandas as pd
+import importlib
+
+from STIC_JPL.model import _resolve_mode_defaults
+from STIC_JPL.process_STIC_table import process_STIC_table
+
+
+def test_resolve_mode_defaults_ecov002():
+    defaults = _resolve_mode_defaults("ECOv002")
+
+    assert defaults["configuration"] == "ECOv002"
+    assert defaults["LE_convergence_target"] == 1.0
+    assert defaults["max_iterations"] == 3
+    assert defaults["g_method"] == "santanello"
+    assert defaults["constrain_negative_LE"] is True
+    assert defaults["constrain_PET"] is True
+    assert defaults["apply_surface_emissivity_to_LWin"] is True
+
+
+def test_resolve_mode_defaults_invalid_falls_back_to_ecov003(caplog):
+    caplog.set_level("WARNING")
+    defaults = _resolve_mode_defaults("bad_mode")
+
+    assert defaults["configuration"] == "ECOv003"
+    assert "falling back to ECOv003" in caplog.text
+
+
+def test_process_stic_table_forwards_configuration(monkeypatch):
+    call_kwargs = {}
+    process_module = importlib.import_module("STIC_JPL.process_STIC_table")
+
+    def fake_stic_jpl(**kwargs):
+        call_kwargs.update(kwargs)
+        return {"LE_Wm2": np.array([1.0])}
+
+    monkeypatch.setattr(process_module, "STIC_JPL", fake_stic_jpl)
+
+    input_df = pd.DataFrame(
+        {
+            "ST_C": [30.0],
+            "EmisWB": [0.97],
+            "NDVI": [0.7],
+            "albedo": [0.2],
+            "Ta_C": [25.0],
+            "RH": [0.5],
+            "Rn_Wm2": [450.0],
+            "Rg": [900.0],
+            "G": [80.0],
+            "lat": [34.0],
+            "lon": [-118.0],
+            "time_UTC": [pd.Timestamp("2023-06-15T19:00:00")],
+        }
+    )
+
+    output_df = process_STIC_table(
+        input_df=input_df,
+        configuration="ECOv002",
+        offline_mode=True,
+    )
+
+    assert call_kwargs["configuration"] == "ECOv002"
+    assert "LE_Wm2" in output_df.columns
