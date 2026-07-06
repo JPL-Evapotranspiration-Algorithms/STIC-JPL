@@ -9,8 +9,8 @@ from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from .constants import *
 from .canopy_air_stream import calculate_canopy_air_stream_vapor_pressure
-from .santanello_soil_heat_flux import calculate_santanello_soil_heat_flux
 from .soil_moisture_iteration import iterate_soil_moisture
+from santanello_soil_heat_flux import santanello_soil_heat_flux as calculate_santanello_soil_heat_flux
 
 
 def _calculate_soil_heat_flux(
@@ -155,9 +155,9 @@ def iterate_with_solar(
     # calculate soil heat flux
     if (G_method or "").lower().strip() == "santanello":
         G = calculate_santanello_soil_heat_flux(
-            Rn_Wm2=Rn_Wm2,
             seconds_of_day=seconds_of_day,
-            M=SM,
+            Rn=Rn_Wm2,
+            SM=SM,
         )
     else:
         G = _calculate_soil_heat_flux(

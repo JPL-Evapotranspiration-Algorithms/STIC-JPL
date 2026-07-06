@@ -6,9 +6,9 @@ import rasters as rt
 from rasters import Raster
 
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from santanello_soil_heat_flux import santanello_soil_heat_flux as calculate_santanello_soil_heat_flux
 
 from .constants import *
-from .santanello_soil_heat_flux import calculate_santanello_soil_heat_flux
 from .soil_moisture_initialization import initialize_soil_moisture
 from .net_longwave_radiation import calculate_net_longwave_radiation
 
@@ -92,9 +92,9 @@ def initialize_with_solar(
     # calculate soil heat flux
     if (G_method or "").lower().strip() == "santanello":
         G = calculate_santanello_soil_heat_flux(
-            Rn_Wm2=Rn_Wm2,
             seconds_of_day=seconds_of_day,
-            M=Ms,
+            Rn=Rn_Wm2,
+            SM=Ms,
         )
     else:
         G = _calculate_soil_heat_flux(

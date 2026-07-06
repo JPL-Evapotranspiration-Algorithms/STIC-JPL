@@ -4,7 +4,7 @@ import importlib
 
 from STIC_JPL.model import _resolve_mode_defaults
 from STIC_JPL.process_STIC_table import process_STIC_table
-from STIC_JPL.santanello_soil_heat_flux import calculate_santanello_soil_heat_flux
+from santanello_soil_heat_flux import santanello_soil_heat_flux as calculate_santanello_soil_heat_flux
 
 
 def test_resolve_mode_defaults_ecov002():
@@ -107,9 +107,9 @@ def test_santanello_soil_heat_flux_helper():
     moisture = np.array([0.5])
 
     g_wm2 = calculate_santanello_soil_heat_flux(
-        Rn_Wm2=rn_wm2,
         seconds_of_day=seconds_of_day,
-        M=moisture,
+        Rn=rn_wm2,
+        SM=moisture,
     )
 
     cg = (1 - moisture) * 0.35 + moisture * 0.05
