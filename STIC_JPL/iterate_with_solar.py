@@ -9,6 +9,7 @@ from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 
 from .constants import *
 from .canopy_air_stream import calculate_canopy_air_stream_vapor_pressure
+from .santanello_soil_heat_flux import calculate_santanello_soil_heat_flux
 from .soil_moisture_iteration import iterate_soil_moisture
 
 
@@ -31,7 +32,7 @@ def _calculate_soil_heat_flux(
 
     if method == "santanello":
         raise NotImplementedError(
-            "G_method='santanello' is not implemented in iterate_with_solar"
+            "G_method='santanello' requires the current soil moisture state"
         )
 
     raise ValueError(f"unsupported soil heat flux method: {G_method}")
@@ -152,13 +153,20 @@ def iterate_with_solar(
     )
 
     # calculate soil heat flux
-    G = _calculate_soil_heat_flux(
-        G_method=G_method,
-        ST_C=ST_C,
-        NDVI=NDVI,
-        albedo=albedo,
-        Rn_Wm2=Rn_Wm2,
-    )
+    if (G_method or "").lower().strip() == "santanello":
+        G = calculate_santanello_soil_heat_flux(
+            Rn_Wm2=Rn_Wm2,
+            seconds_of_day=seconds_of_day,
+            M=SM,
+        )
+    else:
+        G = _calculate_soil_heat_flux(
+            G_method=G_method,
+            ST_C=ST_C,
+            NDVI=NDVI,
+            albedo=albedo,
+            Rn_Wm2=Rn_Wm2,
+        )
 
     # recompute phi
     phi_Wm2 = Rn_Wm2 - G

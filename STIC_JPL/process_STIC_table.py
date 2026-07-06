@@ -79,6 +79,9 @@ def process_STIC_table_single(
     
     if "SWin_Wm2" in input_df and supply_SWin:
         SWin_Wm2 = np.float64(np.array(input_df.SWin_Wm2))
+    elif configuration == "ECOv002" and "Rg" in input_df:
+        SWin_Wm2 = np.float64(np.array(input_df.Rg))
+        logger.info("ECOv002 mode: using Rg column as SWin_Wm2")
     else:
         SWin_Wm2 = None
 

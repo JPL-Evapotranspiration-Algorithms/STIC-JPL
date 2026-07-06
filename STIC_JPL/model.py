@@ -225,9 +225,7 @@ def STIC_JPL(
 
         if G_Wm2 is None:
             if G_method == "santanello":
-                raise NotImplementedError(
-                    "G_method='santanello' is not implemented for no-SWin mode; provide SWin_Wm2, provide G_Wm2, or set G_method='sebal'"
-                )
+                logger.warning("santanello G method requested without SWin_Wm2; falling back to SEBAL G for no-SWin pathway")
 
             G_Wm2 = calculate_SEBAL_soil_heat_flux(
                 ST_C=ST_C,
