@@ -18,6 +18,8 @@ classifiers = [
 ]
 dependencies = [
     "BESS-JPL>=1.21.0",
+    "carlson-leaf-area-index",
+    "carlson-fractional-vegetation-cover",
     "check-distribution",
     "colored-logging",
     "daylight-evapotranspiration>=1.3.4",
