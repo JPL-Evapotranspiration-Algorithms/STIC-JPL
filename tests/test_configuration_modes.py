@@ -17,6 +17,24 @@ def test_resolve_mode_defaults_ecov002():
     assert defaults["constrain_negative_LE"] is False
     assert defaults["constrain_PET"] is True
     assert defaults["apply_surface_emissivity_to_LWin"] is True
+    assert defaults["run_iterative_convergence"] is True
+    assert defaults["use_buck_dewpoint"] is False
+    assert defaults["default_use_variable_alpha"] is True
+    assert defaults["constrain_LE_to_available_energy"] is True
+
+
+def test_resolve_mode_defaults_mallick2014():
+    defaults = _resolve_mode_defaults("MALLICK2014")
+
+    assert defaults["configuration"] == "MALLICK2014"
+    assert defaults["g_method"] == "sebal"
+    assert defaults["constrain_negative_LE"] is False
+    assert defaults["constrain_PET"] is False
+    assert defaults["apply_surface_emissivity_to_LWin"] is False
+    assert defaults["run_iterative_convergence"] is False
+    assert defaults["use_buck_dewpoint"] is True
+    assert defaults["default_use_variable_alpha"] is False
+    assert defaults["constrain_LE_to_available_energy"] is False
 
 
 def test_resolve_mode_defaults_invalid_falls_back_to_ecov003(caplog):

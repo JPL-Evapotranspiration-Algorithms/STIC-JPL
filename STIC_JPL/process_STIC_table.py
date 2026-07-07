@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def process_STIC_table(
         input_df: DataFrame,
         max_iterations=None,
-        use_variable_alpha=USE_VARIABLE_ALPHA,
+    use_variable_alpha=None,
         constrain_negative_LE=None,
         constrain_PET=None,
         supply_SWin=SUPPLY_SWIN,
@@ -48,7 +48,7 @@ def process_STIC_table(
 def process_STIC_table_single(
         input_df: DataFrame,
         max_iterations=None,
-        use_variable_alpha=USE_VARIABLE_ALPHA,
+    use_variable_alpha=None,
         constrain_negative_LE=None,
         constrain_PET=None,
         supply_SWin=SUPPLY_SWIN,
