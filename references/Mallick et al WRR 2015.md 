@@ -1,0 +1,737 @@
+# Reintroducing Radiometric Surface Temperature into the Penman-Monteith Formulation
+
+**Authors:** Kaniska Mallick¹, Eva Boegh², Ivonne Trebs¹, Joseph G. Alfieri³, William P. Kustas³, John H. Prueger⁴, Dev Niyogi⁵, Narendra Das⁶, Darren T. Drewry⁷, Lucien Hoffmann¹, and Andrew J. Jarvis⁸
+
+¹ Luxembourg Institute of Science and Technology, Belvaux, Luxembourg
+² Roskilde University, Roskilde, Denmark
+³ USDA-ARS, Hydrology and Remote Sensing Laboratory, Beltsville, Maryland, USA
+⁴ USDA-ARS, National Laboratory for Agriculture and Environment, Ames, Iowa, USA
+⁵ Purdue University, West Lafayette, Indiana, USA
+⁶ Jet Propulsion Laboratory, California Institute of Technology, Pasadena, California, USA
+⁷ Lancaster Environment Centre, Lancaster University, Lancaster, UK
+
+---
+
+## Abstract
+Here we demonstrate a novel method to physically integrate 
+radiometric surface temperature ($T_R$) into the Penman-Monteith (PM) formulation for estimating the terrestrial sensible and latent heat fluxes ($H$ and $\lambda E$) in the framework of a modified Surface Temperature Initiated Closure (STIC).
+It combines $T_R$ data with standard energy balance closure models for deriving a hybrid scheme that does not require parameterization of the surface (or stomatal) and aerodynamic conductances ($g_s$ and $g_B$).
+STIC is formed by the simultaneous solution of four state equations and it uses $T_R$ as an additional data source for retrieving the "near surface" moisture availability ($M$) and the Priestley-Taylor coefficient ($\alpha$).
+The performance of STIC is tested using high-temporal resolution $T_R$ observations collected from different international surface energy flux experiments in conjunction with corresponding net radiation ($R_N$), ground heat flux ($G$), air temperature ($T_A$), and relative humidity ($R_H$) measurements.
+A comparison of the STIC outputs with the eddy covariance measurements of $\lambda E$ and $H$ revealed RMSDs of 7–16% and 40–74% in half-hourly $\lambda E$ and $H$ estimates.
+These statistics were 5–13% and 10–44% in daily $\lambda E$ and $H$.
+The errors and uncertainties in both surface fluxes are comparable to the models that typically use land surface parameterizations for determining the unobserved components ($g_s$ and $g_B$) of the surface energy balance models.
+However, the scheme is simpler, has the capabilities for generating spatially explicit surface energy fluxes, and is independent of submodels for boundary layer developments.
+---
+
+## 1. Introduction
+Radiometric surface temperature ($T_R$) measured via thermal infrared (TIR) remote sensing provides direct information on the land surface moisture status and surface energy balance (SEB) partitioning [Norman et al., 1995;
+Kustas and Anderson, 2009]. It sets the boundary condition for the transfer of latent and sensible heat through soil, vegetation, and atmosphere.
+The Penman-Monteith (PM) equation [Penman, 1948; Monteith, 1965] is the most pragmatic method for estimating surface to air latent heat flux ($\lambda E$) (or evapotranspiration, $E$, in mm) from terrestrial vegetation, and the intrinsic link of the PM model with $T_R$ emanates through the first-order dependence of the physical-ecophysiological conductances on $T_R$, surface moisture, and radiative fluxes [Mallick et al., 2014].
+This equation treats the vegetation canopy as a "big-leaf" and calculates $\lambda E$ by combining the surface energy balance equation with a conductance-based diffusion equation.
+The fundamental assumption in the derivation of the PM equation was the approximation of linearity of the vapor pressure versus temperature curve ($\partial e^* / \partial T$), which Penman [1948] considered to be the derivative of the saturation vapor pressure curve at the air temperature ($T_A$) [Lascano and van Bavel, 2007].
+The underlying objective of this assumption was to eliminate $T_R$ from the PM formulation for calculating $\lambda E$.
+The elimination of $T_R$ was originally motivated by the fact that observations of $T_R$ were not available for the scales at which estimates of $\lambda E$ are required [Penman, 1948;
+Monteith, 1965].
+
+Despite the elimination of $T_R$ from the PM formulation, a large number of studies have demonstrated that the internal states (e.g., soil moisture and conductances) regulating $E$ are strongly temperature dependent [Monteith, 1981;
+Huband and Monteith, 1986; Blonquist et al., 2009], making $T_R$ a primary state variable of surface energy balance closures [Norman et al., 1995;
+Anderson et al., 1997, 2007; Bastiaanssen et al., 1998; Kustas and Norman, 1999; Kustas and Anderson, 2009].
+Therefore, in situations where observations of $T_R$ are available, they can provide a rich source of information that can be used to estimate the components of the surface energy balance within the PM model framework [Monteith, 1981].
+However, the main hindrance in implementing the PM model in TIR-based SEB modeling arises because there is no direct physical method to integrate $T_R$ information into this model.
+Determining the aerodynamic and surface (canopy for full vegetation, stomata for single leaf) conductance terms ($g_B$ and $g_s$) is also problematic when estimating the surface fluxes using the PM framework because of the lack of robust physical models expressing $g_B$ and $g_s$ as a function of $T_R$.
+Given that $g_B$ and $g_s$ are generally not measurable at scales in which the PM equation is applied, an alternative solution to this problem so far has been the adoption of locally derived semiempirical models [Cleugh et al., 2007;
+Mu et al., 2007, 2011], potentially degrading the predictive quality of the physically based PM model.
+Major drawbacks with these classes of $g_B$ models include their vague description, empiricism, and the requirement of substantial tuning and parameterization in order to make them applicable over the intended biomes and land surface types [Raupach and Finnigan, 1995;
+Liu et al., 2007; van der Tol et al., 2009; van der Kwast et al., 2009; Ershadi et al., 2014].
+In addition, these parameterizations are not stationary due to the dynamics of the near-surface boundary layer.
+For $g_s$, the situation is more problematic because $g_s$ models are generally over-parameterized with respect to the amount of calibration data actually available [Beven, 1979].
+Predicting $g_s$ over a wide range of hydrometeorological conditions introduces too many degrees of freedom in the form of an excessive number of physical and physiological parameters needed to be specified in the $g_s$ models [Jarvis, 1976;
+Beven, 1979; Ball et al., 1987; Dewar, 1995; Leuning, 1995; Katul et al., 2010].
+Recognizing this, and motivated by the advent of thermal remote sensing, an alternative modeling strategy for $E$ focused on using $T_R$ to solve the aerodynamic equation of the sensible heat flux ($H$) and then estimate $\lambda E$ as a residual of the surface energy balance [Norman et al., 1995;
+Anderson et al., 1997, 2007; Bastiaanssen et al., 1998; Kustas and Norman, 1999; Su, 2002; Colaizzi et al., 2012].
+Although some of the outdated modeling approaches [Hall et al., 1992;
+Cleugh et al., 2007] have perpetrated unwarranted doubts regarding the use of $T_R$ measurements in aerodynamic transfer equations because of the existence of large differences between $T_R$ and aerodynamic surface temperatures ($T_0$) [Troufleau et al., 1997], advanced models using the dual-source soil-canopy framework [Norman et al., 1995;
+Anderson et al., 1997, 2007; Colaizzi et al., 2012] or the inclusion of an "extra conductance" concept in the single-source framework [Lhomme et al., 2000;
+Su, 2002; Boegh et al., 2002] appeared to accommodate the effects due to the differences between $T_R$ and $T_0$.
+One of the core objectives of these advancements was also to by-pass the complexities associated with $g_s$ parameterization and instead to rely on the determination of $g_B$ for developing a thermal-based $E$ modeling framework with "intermediate complexity".
+Despite making significant advancements, the single-source and dual-source models still rely on the specifications of $g_B$ as an external input, despite it being an internal state that provides physical feedback to both $\lambda E$ and $H$.
+Hence, an alternative strategy is to revisit the PM equation and attempting to reintroduce $T_R$ into the PM formulation in a way that eliminates the need to parameterize both $g_B$ and $g_s$.
+A recent attempt by Mallick et al. [2014] has elaborated on such possibilities and demonstrated a $T_R$-based 'closure' of the PM equation in a framework referred to as the Surface Temperature Initiated Closure (STIC).
+STIC is formed by the simultaneous solution of four state equations where both the $g_B$ and $g_s$ are treated as internal states and $T_R$ information (in conjunction with meteorological and radiation variables) is used to find their analytical solutions.
+STIC uses $T_R$ as an additional data source for retrieving the "near surface" moisture availability ($M$) and "effective" vapor pressure at the evaporating front ($e_0$).
+STIC also combines the PM framework with the advection-aridity hypothesis [Brutsaert and Stricker, 1979] to find an expression of the evaporative fraction ($\Lambda$) in order to obtain the system closure (for details please see Mallick et al. [2014]).
+The results from this initial formulation were interpreted with coarse temporal resolution (8 days) data from a large number of FLUXNET [Baldocchi et al., 2001] eddy covariance (EC) sites.
+The results showed a tendency of the STIC approach to overestimate $E$ under extremely dry land surface conditions.
+We thought such overestimation to be originating from:
+(a) neglecting the $E$ versus atmospheric vapor pressure deficit hysteresis [Zhang et al., 2014;
+Zheng et al., 2014] in the surface moisture availability ($M$) retrieval framework;
+(b) the use of a single value of Priestley-Taylor parameter ($\alpha$);
+(c) and also due to overlooking the effects of moisture availability into the advection-aridity hypothesis [Brutsaert and Stricker, 1979] that was used for finding the state equation of $\Lambda$.
+These factors are crucial when modeling $E$ in many regions, particularly arid, semiarid, and hyper-arid landscapes.
+Therefore, the original framework of STIC is modified in the present study by incorporating these important effects.
+The objectives of this study are as follows:
+1. Reintroduction of $T_R$ into the PM formulation for estimating $E$ and $H$ by deriving surface energy balance closure expressions in order to eliminate the need of exogenous submodels for both $g_B$ and $g_s$, while incorporating additional modifications in the retrieval of $M$, $\alpha$, and the evaporative fraction state equation of the original STIC framework.
+2. Evaluating the performance of the modified STIC framework by comparing the $E$ and $H$ estimates with high-temporal resolution (half-hourly and hourly) measurements of $E$ and $H$ from four different experimental sites featuring a wide range of environmental and surface variability.
+3. Analyzing the errors in the STIC-derived $\lambda E$ and $H$ estimates by comparing the residual errors in the surface flux estimates against environmental and land surface variables.
+Section 2 describes the STIC equations along with the novel part of the $M$ and $\alpha$ retrieval and the derivation of the $\Lambda$ state equation as an improvement of the original STIC methodology.
+The field experiments and data sources used to validate the results are also described in the same section.
+This will be followed by an evaluation of the STIC results against EC measurements (section 3).
+A discussion on the results, strengths, and weaknesses of the STIC methodology and potential applicability of STIC for global change research is detailed at the end.
+---
+
+## 2. Description of STIC
+STIC is based on finding an analytical solution of the surface and atmospheric conductances to obtain "closure" of the Penman-Monteith (PM) equation by integrating the radiometric surface temperature into the PM equation.
+A conceptual framework of STIC is given in Figure 1. It is a single-source approach where $g_s$ represents both soil and vegetation conductances when there is partial canopy cover conditions.
+Under the conditions of full vegetation and (or) bare surface, $g_s$ represents the canopy conductance and (or) bare surface conductance, respectively.
+A detailed derivation of the STIC equations is given in Mallick et al. [2014].
+The PM equation states [Monteith, 1965],
+
+$$\lambda E = \frac{s\phi + \rho c_p g_B D_A}{s + \gamma \left(1 + \frac{g_B}{g_s}\right)} \tag{1}$$
+
+where $\rho$ is the density of dry air ($\text{kg}\ \text{m}^{-3}$), $c_p$ is the specific heat of dry air ($\text{MJ}\ \text{kg}^{-1}\ \text{K}^{-1}$), $\gamma$ is the psychrometric constant ($\text{hPa}\ \text{K}^{-1}$), $s$ is the slope of the saturation vapor pressure versus air temperature ($\text{hPa}\ \text{K}^{-1}$), $D_A$ is the saturation deficit of the air ($\text{hPa}$) at the reference level or atmospheric vapor pressure deficit, and $\phi$ is the net available energy ($\text{W}\ \text{m}^{-2}$).
+A list of symbols used in the present study is given in Table 1.
+
+The main assumption of the PM equation is that Monteith [1965] applied equation (1) to a stand of vegetation assuming the canopy to exchange $H$ and $E$ with the atmosphere from a theoretical surface located at the same level as the effective sink of momentum ($z_M = d + z_0$; $d$ is displacement height; $z_0$ is roughness length) [Lhomme and Montes, 2014].
+The aerodynamic conductance ($g_B$) is assumed to be the same for both $H$ and $\lambda E$, and $g_B$ is calculated between $z_M$ and the reference height ($z_R$), where $D_A$ is measured [Lhomme and Montes, 2014].
+Monteith [1965] also assumed the surface conductance ($g_s$) to be a plant factor depending on the stomatal conductance of individual leaves and foliage area (soil evaporation was neglected) and there is a similarity between the bulk stomatal conductance and integrated component stomatal conductances under dry conditions.
+$g_s$ is interpreted as the effective stomatal conductance of all the leaves acting as conductances in parallel connectivity [Lhomme and Montes, 2014].
+The whole canopy is treated as a "big-leaf" located at level $d+z_0$ and with the surface conductance $g_s$ [Lhomme and Montes, 2014].
+The two unknowns in equation (1) are $g_B$ and $g_s$.
+Our aim is to derive analytical expressions of both the conductances while exploiting $T_R$ as an external input, which will automatically integrate $T_R$ information into the PM model.
+Neglecting horizontal advection and energy storage, the surface energy balance equation is written as follows:
+
+$$\phi = \lambda E + H \tag{2}$$
+
+where $\phi \cong R_N - G$, with $R_N$ being net radiation, and $G$ being the conductive surface heat flux or ground heat flux.
+All fluxes have units of $\text{W}\ \text{m}^{-2}$.
+
+According to Figure 1, while the sensible heat flux is directed by a single aerodynamic resistance ($r_B = 1/g_B$), the water vapor flux encounters two resistances in series: the surface resistance ($r_s = 1/g_s$) and the aerodynamic resistance to vapor transfer ($r_s + r_B$).
+It is generally assumed that the aerodynamic resistance of water vapor and heat are equal, and both the fluxes are transported from the same level from near surface to the atmosphere.
+The sensible and latent heat flux can be expressed in the form of aerodynamic transfer equations [Boegh et al., 2002;
+Boegh and Soegaard, 2004] as follows:
+
+$$H = \rho c_p g_B (T_0 - T_A) \tag{3}$$
+
+$$\lambda E = \frac{\rho c_p}{\gamma} g_B (e_0 - e_A) = \frac{\rho c_p}{\gamma} g_s (e_0^* - e_0) \tag{4}$$
+
+where $T_A$ is the air temperature at the reference height ($z_R$), $e_A$ is the atmospheric vapor pressure ($\text{hPa}$) at the level at which $T_A$ is measured, $e_0$ and $T_0$ are the atmospheric vapor pressure and air temperature at the source/sink height [Monteith, 1965], or at the so-called roughness length ($z_0$), where wind speed is zero.
+They represent the vapor pressure and temperature of the quasi-laminar boundary layer in the immediate vicinity of the surface level (Figure 1), and $T_0$ can be obtained by extrapolating the logarithmic profile of $T_A$ down to $z_0$ [Troufleau et al., 1997].
+$e_0^*$ is the saturation vapor pressure at the evaporating front ($\text{hPa}$).
+Water vapor transfer occurs from within the vegetation (transpiration) and from the immediate vicinity of the vegetation (interception evaporation) and soil surface (soil evaporation).
+The stomatal cavities are assumed to be saturated with respect to water vapor, hence, it is expected that $e_0^*$ of dense canopies can always be estimated from the radiometric surface temperature ($T_R$).
+For sparse vegetation, the $T_R$ signal is a mixture of both vegetation and soil, and the estimates of $e_0^*$ carry the mixed signal of both the canopy and soil.
+For extremely dry bare soil, the evaporating front may be located slightly below the dry surface layer and expressing $e_0^*$ as a function of $T_R$ can lead to errors.
+Given the potential of $T_R$ to capture the signals of both surface and subsurface wetness [Anderson et al., 2008;
+Kustas and Anderson, 2009], $e_0^*$ is estimated from $T_R$ in the present case.
+By combining equations (2)–(4) and solving for $g_B$, we get:
+
+$$g_B = \frac{\phi}{\rho c_p \left[ (T_0 - T_A) + \left(\frac{e_0 - e_A}{\gamma}\right) \right]} \tag{5}$$
+
+Combining the aerodynamic $\lambda E$ expressions of equation (4) and solving for $g_s$, we can express $g_s$ in terms of $g_B$, $e_0^*$, $e_0$, and $e_A$:
+
+$$g_s = g_B \frac{(e_0 - e_A)}{(e_0^* - e_0)} \tag{6}$$
+
+While deriving expressions for $g_B$ and $g_s$, two more unknown variables are introduced ($e_0$ and $T_0$), thus there are two equations and four unknowns.
+Therefore, two more equations are needed to close the system of equations.
+
+### 2.1. Expression for $T_0$
+An expression for $T_0$ is derived from the Bowen ratio ($\beta$) [Bowen, 1926] and evaporative fraction ($\Lambda$) [Shuttleworth et al., 1989] equation as described in Mallick et al.
+[2014]:
+
+$$T_0 = T_A + \left( \frac{e_0 - e_A}{\gamma} \right) \left( \frac{1 - \Lambda}{\Lambda} \right) \tag{7}$$
+
+This expression for $T_0$ introduces another new variable ($\Lambda$);
+therefore, one more equation that describes the dependence of $\Lambda$ on the conductances ($g_B$ and $g_s$) is needed to close the system of equations.
+Section 2.2 describes the derivation of the $\Lambda$ expression while section 2.3 describes the derivation of $e_0$.
+
+### 2.2. Derivation of $\Lambda$
+In order to express $\Lambda$ in terms of $g_B$ and $g_s$ we had adopted the advection-aridity hypothesis [Brutsaert and Stricker, 1979] and introduced a modification.
+Although the advection-aridity hypothesis leads to an assumed link between $g_B$ and $T_R$, the effects of surface moisture were not explicit in the advection-aridity equation.
+The present study has implemented a moisture constraint in the original advection-aridity hypothesis for deriving an expression of $\Lambda$.
+Deriving the expression for $\Lambda$ is one of the key novelties of the STIC framework, and the novel part of the derivation is described below.
+The logic of using the advection-aridity hypothesis for finding an expression of $\Lambda$ is briefly described in Appendix A (for details see Mallick et al. [2014]).
+A modified form of the original advection-aridity hypothesis (equation (A2) in Appendix A) is written as follows:
+
+$$E_{PM}^* = 2E_{PT}^* - E \tag{8}$$
+
+Here $E_{PM}^*$ is the potential evapotranspiration according to Penman-Monteith [Monteith, 1965] for any surface, and $E_{PT}^*$ is the potential evapotranspiration according to Priestley-Taylor [Priestley and Taylor, 1972].
+Dividing both sides by $E$ we get:
+
+$$\frac{E}{E_{PM}^*} = \frac{E}{2E_{PT}^* - E} \tag{9}$$
+
+and dividing the numerator and denominator of the right-hand side of equation (9) by $E_{PT}^*$ we get:
+
+$$\frac{E}{E_{PM}^*} = \frac{\frac{E}{E_{PT}^*}}{2 - \frac{E}{E_{PT}^*}} \tag{10}$$
+
+Again assuming the Priestley-Taylor equation for any surface is a variant of the PM potential evapotranspiration equation, we will derive an expression of $E_{PT}^*$ for any surface.
+
+
+$$E_{PM}^* = \frac{s\phi + \rho c_p g_B D_A}{s + \gamma(1 + \frac{g_B}{g_{smax}})} = \frac{s\phi}{s + \gamma/(1 + \frac{g_B}{g_{smax}})} \left(1 + \frac{\rho c_p g_B D_A}{s\phi}\right) \tag{11}$$
+
+$$E_{PT}^* = \alpha \frac{s\phi}{s + \gamma \left(1 + \frac{g_B}{g_{smax}}\right)} \tag{12}$$
+
+Here $\alpha$ is the Priestley-Taylor parameter [$\alpha = 1.26$ under nonlimiting moisture conditions, $\alpha = 1.7$ under water-limited condition, Pereira, 2004].
+$g_{smax}$ is defined as the maximum possible $g_s$ under the prevailing atmospheric conditions whereas $g_s$ is limited due to the moisture availability ($M$) and hence $g_{smax} = g_s / M$ [Monteith, 1995].
+This approximation is very similar to the $g_s$ equation of Jarvis [1976] and Baldocchi et al.
+[1991], who introduced multiple environmental drivers to constrain $g_{smax}$. However, the main weakness of the Jarvis [1976] expression is the assumption that the environmental variables operate independently [Monteith, 1995].
+We assume that $M$ is a significant controlling factor for the ratio of actual and potential evapotranspiration (or transpiration for a dry canopy), and the interactions between the land and environmental factors are substantially reflected in $M$.
+Since Penman [1948] derived his equation over the open water surface and $g_{smax}$ over the water surface is very high [Monteith, 1965, 1981], $g_B/g_{smax}$ was assumed to be negligible.
+Introduction of leaf area index ($L_{ai}$) is not necessary in this case because $L_{ai}$ plays a role to scale up the conductances from leaf to lumped canopy values, and we are already treating $g_s$ as a lumped surface conductance.
+Expressing $\phi$ as $\phi = E / \Lambda$ and expressing $E_{PT}^*$ according to equation (12) gives the following expression of $E/E_{PT}^*$:
+
+$$\frac{E}{E_{PT}^*} = \frac{\Lambda [s + \gamma(1 + \frac{g_B}{g_{smax}})]}{\alpha s} \tag{13}$$
+
+Now substituting $E/E_{PT}^*$ from equation (13) into equation (10) and after some algebra we obtain the following expression:
+
+$$\frac{E}{E_{PM}^*} = \frac{\Lambda [s + \gamma(1 + \frac{g_B}{g_{smax}})]}{2\alpha s - \Lambda [s + \gamma(1 + \frac{g_B}{g_{smax}})]} \tag{14}$$
+
+According to the PM equation [Monteith, 1965] of actual and potential evapotranspiration,
+
+$$\frac{E}{E_{PM}^*} = \frac{s + \gamma(1 + \frac{M g_B}{g_s})}{s + \gamma(1 + \frac{g_B}{g_s})} \tag{15}$$
+
+Combining equations (14) and (15) gives an expression for $\Lambda$ in terms of 
+the conductances:
+
+$$\frac{s + \gamma(1 + \frac{M g_B}{g_s})}{s + \gamma(1 + \frac{g_B}{g_s})} = \frac{\Lambda [s + \gamma(1 + \frac{M g_B}{g_s})]}{2\alpha s - \Lambda [s + \gamma(1 + \frac{M g_B}{g_s})]} \tag{16}$$
+
+After some algebra the final expression of $\Lambda$ is as follows:
+
+$$\Lambda = \frac{2\alpha s}{2s + 2\gamma + \gamma \frac{g_B}{g_s}(1 + M)} \tag{17}$$
+
+### 2.3. Significance of Moisture Availability ($M$) and $e_0$ in STIC
+Expression for $e_0$ requires the determination of near-surface moisture availability ($M$).
+$M$ is a unitless quantity which describes the relative dryness or wetness of the surface and controls the transition from potential to actual evaporation rate.
+Considering the general case of evaporation from any nonsaturated surface at a rate less than the potential, $M$ is the ratio of the actual evaporation rate to the potential evaporation rate.
+Here $M$ is assumed to be homogeneous between the surface and the evaporation front and its contribution to the surface vapor pressure ($e_s$) is given as follows [Segal et al., 1990;
+Lee and Pielke, 1992]:
+
+$$e_s = e_A(1 - M) + M e_s^* \tag{18}$$
+
+$e_s^*$ is the surface saturated vapor pressure expressed in $T_R$.
+For the extreme case where $M$ equals zero, the surface is absolutely dry, $e_s$ equals $e_A$, and no water vapor is transported from the surface to the atmosphere ($\lambda E = 0$).
+When $M$ equals unity, it reflects a saturated evaporating surface (e.g., after a heavy rainfall event or irrigation).
+Given $T_R$ serves as a direct metric for the surface moisture status [Kustas and Anderson, 2009], we used $T_R$ in conjunction with $T_A$ and relative humidity ($R_H$) to derive $M$ within a physical estimation framework.
+The retrieval of $M$ is already described in Mallick et al.
+[2014] (details in Appendix A), but a novel part is introduced here to account for any $\lambda E - D_A - T_R$ hysteresis [Zhang et al., 2014;
+Zheng et al., 2014].
+
+Following Venturini et al. [2008], Mallick et al.
+[2014] adopted the retrieval of $M$ (equation (A4)) with some modifications (see Appendix A for details).
+However, using equation (A4) for determining $M$ was found to produce overestimation of $E$ under the conditions when hysteresis occurs between $T_R$, $D_{A}$, and $E$, which is normally observed in many regions of the world [Zhang et al., 2014;
+Zheng et al., 2014; Bowen et al., 1999]. Hysteresis is found because the capacity of the soil and vegetation to supply moisture to the atmosphere is larger in the morning than in the afternoon [Boegh et al., 1999].
+The onset of hysteresis happens when the control of $E$ shifts from energy limitation to water limitation and the role of root-zone soil moisture becomes dominant.
+The hysteresis loop in the $\lambda E - T_R - D_A$ relationship occurs due to the combined effects of soil moisture changes and time lags in the environmental (e.g., $R_N$, $T_A$, $D_A$) and land surface drivers ($T_R$) that influence $\lambda E$ [Zhang et al., 2014;
+Zheng et al., 2014]. Therefore, despite $D_A$ rising, a recession in $\lambda E$ is found because plants spend their stored root-zone moisture in a conservative way.
+The $M$ retrieval method of Venturini et al. [2008] does not explicitly consider the complex interactions between $\lambda E - T_R - D_A$ and soil water potential-soil moisture retention phenomena during the soil moisture dry-down stages.
+While postulating the theory of evaporation from nonsaturated dry surfaces, Granger and Gray [1989] derived an expression of $M$ that has a strong dependence on $T_R$, $D_A$, and $\phi$ (for the detailed derivation see Granger and Gray [1989]):
+
+$$M = \frac{\gamma \lambda E}{(s\phi + \gamma E_A - s\lambda E)} \tag{19}$$
+
+According to the aerodynamic transfer equation, $\lambda E$ can also be expressed as $\lambda E = f(u)(e_s - e_A)$, where $f(u)$ is the wind function that is related to $g_B$.
+$E_A$ is generally referred to as the "drying power" of the air [Monteith, 1965;
+Granger and Gray, 1989] and is a product of the wind function $f(u)$ and $D_A$:
+
+$$M = \frac{\gamma f(u)(e_s - e_A)}{s\phi + \gamma f(u)(e_A^* - e_A) - sf(u)(e_s - e_A)} \tag{20}$$
+
+$e_A^*$ is the saturation vapor pressure of air expressed in $T_A$.
+Assuming $\phi \cong E^* \cong f(u)(e_s^* - e_A)$ and cancelling $f(u)$ from both the denominator and numerator, $M$ can be expressed as follows:
+
+$$M = \frac{(e_s - e_A)\gamma}{s(e_s^* - e_A) + (e_A^* - e_A)\gamma - s(e_s - e_A)} = \frac{(e_s - e_A)\gamma}{(e_s^* - e_s)s + (e_A^* - e_A)\gamma} \tag{21}$$
+
+According to equation (21), for a dry surface, $e_s$ is close to $e_A$ and $M$ approaches zero, whereas for a saturated surface $e_s \rightarrow e_s^*$ and $e_s^* \rightarrow e_A^*$ (because surface temperature becomes very close to the ambient air temperature) and $M$ approaches unity. At the same time under the hysteretic $\lambda E 
+- D_A$ soil water retention conditions, equation (21) will always have an additional $D_A$ feedback on the surface moisture availability. Expressing $M$ in terms of the component temperatures will result in the following expression:
+
+$$M = \frac{\gamma s_1 (T_{SD} - T_D)}{s_3 (T_R - T_{SD})s + \gamma s_4 (T_A - T_D)} \tag{22}$$
+
+Here $s_1$, $s_3$, and $s_4$ are the slopes of the saturation vapor pressure and temperature between $(T_{SD} - T_D)$ versus $(e_s - e_A)$, $(T_R - T_{SD})$ versus $(e_s^* - e_s)$, and $(T_A - T_D)$ versus $(e_A^* - e_A)$ relationships.
+$T_{SD}$ and $T_D$ are the surface dewpoint temperature and air dewpoint temperature, respectively.
+Since $T_{SD}$ is unknown, $s_1$ and $s_3$ are approximated at $T_D$ and $T_R$.
+The rationale behind this approximation is described in Appendix A.
+
+In the present study, we use the two equations (equations (A4) and (22)) for $M$ depending on the occurrence of hysteresis.
+We assume equation (A4) to be the indicator of surface wetness that controls the evapotranspiration from the upper few centimeters of the surface, whereas equation (22) is assumed to be the indicator of the root-zone wetness that controls the evapotranspiration under strong hysteretic conditions between $E$, $R_N$, $T_R$, and $D_A$.
+When $E$ is limited due to low surface wetness and high $D_A$, maximum $\lambda E$ occurs around 1–2 h before noon, after which the stomatal conductance drops down as a response to increasing $D_A$ and water stress [Boegh et al., 1999].
+Hysteresis was detected from the rising and falling limbs of $R_N$, $T_R$, and $D_A$ [Zhang et al., 2014;
+Zheng et al., 2014; Boegh et al., 1999] according to two criteria:
+(a) if for a clear day, the $R_N$ limb is falling after the peak $R_N$ is reached and at the same time both the $T_R$ and $D_A$ limbs continue rising, those events were identified as hysteresis;
+(b) if both the $R_N$ and $T_R$ limbs are falling after the peak $R_N$ is reached and at the same time if the $D_A$ limb continues rising, those events were also identified as hysteresis.
+### 2.4. STIC Closure Equations and Estimation of $\alpha$
+The surface moisture availability is assumed to impact both $e_s$ and $e_0$.
+As for the $e_s$ expression (equation (18)), $M$ is used to estimate $e_0$ as follows:
+
+$$e_0 = e_A(1 - M) + M e_0^* \tag{23}$$
+
+Although equation (23) is empirical, it is based on our expectation of how in-canopy vapor pressure behaves between extreme wet-dry surface conditions.
+However, in-canopy aerodynamic conductance (between soil and source/sink height and between leaves and source/sink height) is extremely difficult to model (not well developed) and empirical methods may be much better (as suggested here).
+From equations (5), (6), (7), and (17), there are four unknowns ($g_B$, $g_s$, $T_0$, $\Lambda$), which can be solved analytically.
+The closure equations of STIC and estimation of the Priestley-Taylor parameter ($\alpha$) are described below.
+Equations (5) ($g_B$), (6) ($g_s$), (7) ($T_0$), and (17) ($\Lambda$) form the four closure equations of STIC which are solved to retrieve the analytical expressions of these four unobserved variables.
+In the analytical expressions, the radiative ($R_N$, $G$), meteorological ($T_A$, $R_H$ or $e_A$ or $T_D$), land surface ($T_R$, $M$), and ecophysiological ($\alpha$) variables provide the constraints to the conductances, $T_0$, and $\Lambda$.
+However, since $\alpha$ is still unknown, this variable is iteratively estimated.
+Following the equation of Penman [1948], the present work reports an analytical expression of the Priestley-Taylor coefficient ($\alpha$) under limiting surface and environmental conditions within the framework of the PM equation [Monteith, 1965, 1981].
+Here equation (1) is decomposed as follows to obtain a physical expression of $\alpha$ under limited environmental and ecohydrological conditions:
+
+$$E = \frac{s\phi}{s+\gamma} \left[ \frac{s+\gamma}{s+\gamma(1+\frac{g_B}{g_s})} + \frac{\rho c_p g_B D_A (s+\gamma)}{s\phi \{s+\gamma(1+\frac{g_B}{g_s})\}} \right] \tag{24}$$
+
+$$\text{Therefore, } \alpha = \frac{s+\gamma}{s+\gamma(1+\frac{g_B}{g_s})} + \frac{\rho c_p g_B D_A (s+\gamma)}{s\phi \{s+\gamma(1+\frac{g_B}{g_s})\}} \tag{25}$$
+
+After retrieving $M$, $e_s^*$ (from $T_R$), and $e_0$ (from equation (23)), an initial estimate of $g_B$, $g_s$, $\Lambda$, and $T_0$ is obtained from the closure equations with an initial value of $\alpha = 1.26$.
+The process is then iterated by updating $\alpha$ in subsequent iterations with the previous estimates of $g_B$ and $g_s$ by the above mentioned physical expression (equation (25)) until a stable value of $\alpha$ is achieved.
+Repeating this process produces a stable value of $\alpha$ within 10–12 iterations.
+The final $\alpha$ value is used in the closure equations for obtaining the final estimates of $g_B$, $g_s$, $\Lambda$, and $T_0$.
+An example of the convergence of $\alpha$ is shown in Figure 3. The computational sequence diagram is given in Figure 4.
+
+---
+
+## 3. Data Sets
+Estimation of $\lambda E$ and $H$ through STIC requires measurements of $T_R$, $R_N$, $G$, $T_A$, $R_H$ or $e_A$, and the dewpoint temperature of air ($T_D$).
+These radiative and meteorological variables were measured during four different field experiments.
+Simultaneous micrometeorological measurements of $\lambda E$ and $H$ by the EC method were used to evaluate the performance of STIC.
+$T_D$ was calculated from $T_A$ and $R_H$ according to Buck's [1981] equation.
+Detailed descriptions of the different data sets are given below, and a list of the sites is given in Table 2.
+
+### 3.1. SMEX02 and SMACEX Data Set
+The Soil Moisture Experiment-2002 (SMEX02) was conducted in conjugation with the Soil Moisture Atmosphere Coupling Experiment (SMACEX) [Kustas et al., 2005] during June and July 2002 in and around the Walnut Creek Watershed (WCW) near Ames, Iowa ($41^\circ58'\text{N}$, $93^\circ40'\text{W}$).
+The main objectives of the experiment were to study the land-atmosphere interactions and to test and validate the thermal remote sensing-based $E$ algorithms over a wide spectrum of hydrothermal and vegetation conditions.
+The landscape was an agro-ecosystem with an intensive corn and soybean production region that consisted of a network of 12 meteorological and EC flux (METFLUX) towers (six soybean and six corn) (Table 2).
+Surface fluxes ($H$, $E$, and $G$) as well as $T_R$, $R_N$, $T_A$, and $R_H$ were measured at all towers and averaged for 30 min intervals.
+Tower heights were maintained at approximately twice the canopy height.
+The intensive observation period covered a span of 18 consecutive days from day of year (DOY) 171 to 189.
+
+### 3.2. BEAREX08 Data Set
+The 2008 Bushland Evapotranspiration and Agricultural Remote sensing Experiment (BEAREX08) was a multiagency field campaign near Bushland, Texas ($35^\circ11'\text{N}$, $102^\circ06'\text{W}$, 1170 m elevation above MSL) to investigate and compare different field and remote sensing-based approaches for measuring surface energy fluxes [Evett et al., 2012].
+More specifically, the primary goal of BEAREX08 was to investigate the impact of meso and microscale advective processes on $\lambda E$ measurements from dryland and irrigated agricultural fields, and how well these impacts are captured by remote sensing and predictive modeling systems.
+The study area consisted of four adjacent fields (each 4.7 ha) containing irrigated and dryland cotton along with nearby bare soil, wheat stubbles, and rangeland fields using nine EC stations, three large aperture scintillometers, and three Bowen ratio systems.
+The data used in this study were collected in the irrigated cotton fields.
+Surface fluxes ($H$, $E$, and $G$), $T_R$, $R_N$, $T_A$, and $R_H$ were measured at 60 min intervals at all of the towers.
+The detailed description of the BEAREX08 field campaign can be found in Evett et al.
+[2012] while a complete discussion of the data from the four EC stations can be found in Alfieri et al.
+[2011, 2012].
+
+### 3.3. FIFE Data Set
+The First ISLSCP (International Satellite Land Surface Climatology Project) Field Experiment (FIFE) was a land-surface atmosphere exchange experiment conducted in and around the $15\ \text{km} \times 15\ \text{km}$ Konza Prairie Long Term Ecological Research (LTER) site centered at $39^\circ\text{N}$, $96^\circ88'\text{W}$ near Manhattan, Kansas [Sellers et al., 1992].
+The land cover was predominantly a grassland ecosystem. Surface data from 10 Portable Automatic Meteorological (PAM) stations were collected during three consecutive summers from 1 May 1987 to 10 November 1989. Meteorological and surface flux measurements were also conducted at multiple sites (22 sites in 1987, 10 in 1988, and 14 in 1989) [Kanemasu et al., 1992].
+Surface flux and meteorological data collected at all the sites were averaged for each year from 1987 to 1989 (for details on averaging, data processing, and quality control methods see Betts and Ball [1998]).
+Although significant heterogeneity was found between sites [Betts and Ball, 1998], no attempts were made to account for land cover when averaging the data for the sites.
+Given the limited data availability for 1989, we have used the data of 1987 and 1988 in the present analysis.
+### 3.4. SAFARI2000 Data Set
+SAFARI2000 was an international science initiative in Southern Africa to investigate biosphere-atmosphere exchange processes [Scholes et al., 2002].
+Campaign-based EC measurements of carbon dioxide, water, and energy fluxes (30 min averages) were made at four locations along a mean annual precipitation gradient in southern Africa during the SAFARI 2000 wet (growing) season campaign in the year 2000. Measurements were conducted along the Kalahari Transect and cover a gradient of average annual precipitation from 879 mm in Mongu to 365 mm in Tshane.
+This climate gradient is reflected by vegetation type and structure covering broadleaf evergreen forest in the north to open savanna in the south.
+EC instruments were installed on a permanent tower in Mongu, Zambia ($879\ \text{mm/yr}$ of rainfall per year), as well as on a portable tower in Maun ($460\ \text{mm/yr}$), Okwa River Crossing in Ghanzi ($407\ \text{mm/yr}$), and Tshane ($365\ \text{mm/yr}$), Botswana for several days at each site.
+As $E$ data of Mongu and Tshane were very noisy, we omitted these data in the present analysis.
+The main reasons for selecting these four experimental data sets were:
+(a) they cover a wide range of surface and atmospheric dryness-wetness conditions,
+(b) data are substantially quality controlled, and
+(c) they were used earlier to test and validate some sophisticated thermal remote sensing-based $\lambda E$ algorithms [Norman et al., 1995;
+Anderson et al., 1997, 2007, 2012; Su, 2002].
+
+Another important advantage of using these data sets was the availability of high-frequency $T_R$ measurements within the EC footprint, along with the micrometeorological and meteorological measurements.
+The surface energy balance data were already closed in the FIFE data sets.
+For the rest of the experimental data sets, the surface energy balance was closed by applying the Bowen ratio [Bowen, 1926] closure as described in Chavez et al.
+[2005] and later adopted by Anderson et al. [2007] and Mallick et al. [2014].
+It is important to mention, for SMEX02, data from six individual corn and six individual soybean sites were combined (or concatenated) and crop-wise analysis was conducted.
+Similarly, data from four BEAREX08 sites and data from two SAFARI2000 sites were individually combined.
+The surface energy balance of individual EC stations was closed at first before concatenating the data.
+For every individual experiment, a similar kind of meteorological, radiation, and surface flux measurement sensors were used in the multiple EC stations, and the sensor precision as well as accuracy was the same within the experiments.
+---
+
+## 4. Results
+
+### 4.1. Sensitivity of Conductances and Surface Fluxes to $T_R$
+The accuracy of the conductance and surface flux retrieval through STIC depends on the quality of $T_R$.
+Therefore, a sensitivity analysis of STIC was first carried out to quantify the impacts of uncertainty in $T_R$ on $g_B$, $g_s$, $\lambda E$, and $H$.
+The sensitivity analysis will indicate the accuracy that is necessary in $T_R$ measurements to retrieve reliable surface energy fluxes.
+Sensitivity analyses were conducted by increasing and decreasing $T_R$ randomly from its original value while keeping the other variables and parameters constant.
+This procedure was selected because the fluxes and conductances reflect an integrated effect of $T_R$ and it shows substantial variability throughout the year.
+First, the base conductances and fluxes were computed using the base $T_R$ data.
+Then $T_R$ was varied randomly and a new set of conductances and fluxes were computed.
+The nature of the sensitivity analysis used here is similar to that of Anderson et al.
+[1997]: the absolute sensitivity ($S_v$) of any of the output variables ($V$) to $\pm X$ uncertainty in $T_R$ was assigned as $S_v = |(V_{x+} - V_{x-}) / V_{xt}|$.
+An $S_v$ of 0.1 signifies 10% and 1 signifies 100%.
+Here $V_{x+}$ and $V_{x-}$ are the estimated variables when the value of $T_R$ is increased or decreased by $X$, and $V_{xt}$ is the value of the estimated variable at "true" $T_R$.
+The averaged random uncertainties of $T_R$ were 0.78, 0.77, 0.82, and 0.80 K for SMEX02, BEAREX08, FIFE, and SAFARI2000, respectively (Figure 5).
+Both the fluxes and conductances were found to be significantly sensitive to the $T_R$ uncertainties.
+However, the sensitivity of $H$ among the two fluxes was higher, while the sensitivity of $g_s$ was higher among the two conductances (Figure 5).
+The magnitude of average $S_v$ varied from 14% to 30% for $g_B$, 19% to 36% for $g_s$, 8% to 18% for $\lambda E$, and 17% to 37% for $H$, respectively (Figure 5).
+### 4.2. Evaluation of Half-Hourly and Hourly $\lambda E$ and $H$
+The performance of STIC was evaluated using the measures suggested by Willmott [1982].
+These include the statistical analysis of root-mean-square deviation (RMSD) (both systematic, $RMSD_s$, and unsystematic or random, $RMSD_u$), mean absolute percent deviation (MAPD), and correlation coefficient ($r$).
+According to Willmott [1982], systematic error ($RMSD_s$) should be less than the random error ($RMSD_u$).
+The proportion of the total RMSD arising from systematic biases is reflected in the quantity $RMSD_s^2 / RMSD^2$ [Willmott, 1982].
+Estimates of $\lambda E$ and $H$ from STIC at half-hourly (hourly for BEAREX08) temporal resolution are compared to the measurements (Figure 6) for all four experiments.
+In all four experiments, both the predicted $\lambda E$ and $H$ are generally in good agreement with the observations, with reasonable correlation ($r$ ranges between 0.82 and 0.98) between observed and STIC fluxes.
+Regression statistics varied between 0.85 and 1.01 for the slope and -4 to 53 for the offset for $\lambda E$ (Table 3), whereas for $H$, these were 0.7–1 for the slope and -12 to 21 for the offset (Table 3), respectively.
+The scatter between the observed and predicted $\lambda E$ was reasonably small (Figure 6) while the comparison of $H$ shows relatively larger scatter between the modeled and measured values.
+This was in particular the case for BEAREX08 and FIFE (inset of Figure 6), thus resulting in higher RMSD and MAPD for $H$.
+Quantitative measures (error statistics) of the STIC performance at half-hourly (hourly for BEAREX08) temporal resolution are shown in Table 3. For SMEX02, $\lambda E$ and $H$ derived by STIC were generally in good agreement with the observations.
+The difference between mean observed and predicted values of both $\lambda E$ and $H$ is fairly small ($2-7\ \text{W}\ \text{m}^{-2}$ and $-2\ \text{to}\ -3\ \text{W}\ \text{m}^{-2}$).
+The relative sizes of $RMSD_s$ to $RMSD$ for both fluxes indicate a small systematic difference.
+For $\lambda E$ the $RMSD_s^2 / RMSD^2$ proportion varied from 0.03% to 16% whereas for $H$ this proportion was 16% to 33%.
+However, the percent errors (MAPD) in $H$ are relatively large because the magnitude of the observed $H$ is small.
+For BEAREX08, the magnitude of bias was 6 to $-17\ \text{W}\ \text{m}^{-2}$ for $\lambda E$ and $2-19\ \text{W}\ \text{m}^{-2}$ for $H$.
+Both fluxes had reasonably small $RMSD_s$ values, which again indicate a small systematic difference between the observed and predicted fluxes.
+The ratio of $RMSD_s^2 / RMSD^2$ was 1–22% for $\lambda E$ and 2–17% for $H$, respectively (Table 3).
+For the FIFE data, the ratio of $RMSD_s^2 / RMSD^2$ varied between 13% and 25% for $\lambda E$, whereas this ratio was 15–39% for $H$ (Table 3).
+The MAPD in $H$ was high for both BEAREX08 (45% to 77%) and FIFE (30–31%) sites.
+For the SAFARI2000, the MAPD of both fluxes varied from 10% to 15% and 20% to 21%, respectively (Table 3).
+The proportion of the systematic difference was also low for both $\lambda E$ (13–21%) and $H$ (3–8%).
+
+### 4.3. Evaluation of Daily and Seasonal $\lambda E$ and $H$
+Hourly fluxes were aggregated into daytime totals and compared with the measured fluxes as shown in Figure 7, with associated error statistics given in Table 4. For SMEX02, STIC performed efficiently in capturing the daily $\lambda E$ and $H$ patterns of both corn and soybean (Figures 7a and 7c), although there was slight underestimation of $\lambda E$ over corn (Figure 7b).
+This was also evidenced by the negative intercept of the least square regression between the observed and STIC $\lambda E$ (Table 4).
+For the BEAREX08 experiment, STIC was unable to effectively capture the advective enhancement in $\lambda E$ that occurred during day of year (DOY) 215–217, as evidenced in Figure 7f.
+However, the daily $\lambda E$ dynamics on some of the days with minor advection from DOY 177 to 203 was fairly well captured by STIC.
+For the FIFE data, the scatter between observed and estimated $\lambda E$ and $H$ was relatively large as compared to the other experiments (Figure 7g).
+Errors in the daily step are smaller (Table 4) than for hourly fluxes due to cancellation of random errors through the course of the day.
+Generally, the difference between mean predicted and observed values of both $\lambda E$ and $H$ varied between $0.01\ \text{to}\ 0.65\ \text{MJ}\ \text{m}^{-2}\ \text{d}^{-1}$ and $-0.40\ \text{to}\ 0.50\ \text{MJ}\ \text{m}^{-2}\ \text{d}^{-1}$ (Table 4).
+MAPD of the daytime $\lambda E$ and $H$ values varied from 5% to 13% and from 9% to 35%, respectively (Table 4).
+For $\lambda E$, the proportion of $RMSD_s^2 / RMSD^2$ varied from 11% to 53% whereas for $H$ this proportion ranged from 4% to 55% (Table 4).
+The magnitude of $RMSD$ in daytime total $\lambda E$ varied from $0.47\ \text{to}\ 1.65\ \text{MJ}\ \text{m}^{-2}\ \text{d}^{-1}$, which was 5% to 16% of the observed $\lambda E$ (Table 4).
+For $H$, the RMSD was $0.47\ \text{to}\ 1.81\ \text{MJ}\ \text{m}^{-2}\ \text{d}^{-1}$, which was 10 to 44% of the observed daytime $H$ (Table 4).
+The average seasonal cumulative values of $E$ ($E$, mm) for different experiments are shown in Figure 8. Since time series observations of the individual flux sites in SMEX02 and BEAREX08 were incomplete, data from all the corn and soybean in SMEX02 and all cotton sites in BEAREX08 are averaged to produce cumulative corn $E$, soybean $E$, and cotton $E$, respectively.
+For corn there was a consistent underestimation of cumulative $E$ to the order of 5–8% (Figure 8a) whereas for soybean there was a consistent overestimation (2–7%) after DOY 180 (Figure 8b).
+For cotton, although there was a consistent overestimation (15–50%) of cumulative $E$ in the initial stage (from DOY 164 to 174), the error was reduced after DOY 174 ($-4\%$ to 10%) (Figure 8c).
+For the grassland of FIFE, the error in cumulative modeled $E$ was within 18% to 1% (Figure 8d).
+Overall, the errors in cumulative $E$ computed from STIC were within 2–6% of the cumulative observed $E$.
+
+### 4.4. Impact of Moisture Availability Representation on Modeled Fluxes
+An intercomparison of half-hourly (hourly for BEAREX08) $\lambda E$ and $H$ estimates against different $M$ retrieval methodologies is also conducted by comparing the statistics (RMSD and $r$) using two different $M$ retrieval approaches.
+In those cases, $M$ was estimated (a) without assuming any hysteresis by employing equation (A4) only and (b) by employing the air relative humidity and vapor pressure deficit (a modified PMBL method of Mallick et al. [2013]) (see Appendix B for modified PMBL), respectively.
+The results (Figure 9) indicate significant improvements in $\lambda E$ (RMSD improved by 19–46%; $r$ improved by 3–23%) (Figures 9a and 9b) and $H$ estimates (RMSD improved by 25–48%; $r$ improved by 15–47%) (Figures 9c and 9d) for all the experiments (with the exception of SMEX02 where the RMSD improvement was not substantial) when $T_R$ was used for constraining $M$ in the STIC framework as compared to $R_H - D_A$ based $M$ estimates.
+However, very low (for SAFARI2000) to moderate improvements (SMEX02, BEAREX08, and FIFE) were found between the $T_R$-based hysteretic and nonhysteretic $\lambda E$ (RMSD improved by 3–17% and $r$ improved by 0–3%) (Figures 9a and 9b) and $H$ estimates (RMSD improved by 3–7%; $r$ improved by 0–4%) (Figures 9c and 9d).
+### 4.5. Error Analysis of $\lambda E$ and $H$ Estimates
+
+A residual error ($\epsilon$) (= predicted flux $-$ observed flux) analysis was conducted to quantify the impacts of biophysical, radiation, and meteorological variables on the error propagation in both $\lambda E$ and $H$ estimates.
+BEAREX08 data were chosen for this analysis because this experiment was conducted for a relatively longer time period and covers a wide range of atmospheric turbulence, meteorological, and surface wetness conditions.
+The distributions of $\epsilon$ against different limits of biophysical, radiation, and meteorological variables are shown in box and whisker plots (Figures 10a, 10c, 10e, 10g, and 10i).
+The boxplots show the median and interquartile range of the $\epsilon$ distribution and illustrate whether the distribution of $\epsilon$ is symmetric or skewed for the observed ranges of different input variables that control the modeled $\lambda E$.
+The direction of $\epsilon$ in $H$ was opposite to $\lambda E$ (therefore the figures of residual error of $H$ are not shown).
+In general, the residual $\lambda E$ and $H$ errors ($\epsilon_{\lambda E}$ and $\epsilon_H$) were very weakly correlated ($r = \pm0.04$) with the observed difference between $T_R$ and $T_A$ ($dT_{R-A}$) for the entire range of $dT_{R-A}$.
+From Figure 10a, it is evident that there was a negligible overall positive mean $\epsilon_{\lambda E}$ when $dT_{R-A}$ increases beyond $10^\circ\text{C}$ and $\epsilon_{\lambda E}$ was only 0.3%.
+Figure 10b confirms that this error is systematic since the ratio of $RMSD_s^2 / RMSD^2$ for both $H$ and $\lambda E$ is close to unity (100%).
+Both $\epsilon_{\lambda E}$ and $\epsilon_H$ were weakly correlated ($r = \pm0.22$) with wind speed ($W_s$) (Figure 10c) and an error of 4.5% was introduced into the flux estimates by neglecting the $W_s$ information in the STIC framework.
+The systematic RMSD was higher for $H$ than for $\lambda E$ for high values of $W_s$ (Figure 10d).
+Overall correlation between $\epsilon_{\lambda E}$ and $D_A$ was also weak, to the order of 0.11.
+However, when $D_A$ exceeds 40 hPa, $\epsilon_{\lambda E}$ was positively skewed (Figures 10d and 10e) and $r$ increased up to 0.17.
+The strongest relationship between $\epsilon_{\lambda E}$ and $D_A$ was found when $D_A$ exceeded 40 hPa and $W_s$ exceeded $8\ \text{m}\ \text{s}^{-1}$ when approximately 72% error was introduced into the estimates of $\lambda E$ (results not shown).
+However, such conditions are rarely found and only 0.2% of the total data exhibited this atypical combination of $D_A$ and $W_s$.
+It is also evident from Figure 10f that the ratio of $RMSD_s^2 / RMSD^2$ for $\lambda E$ was greatest when $D_A$ exceeds 40 hPa.
+The correlation between $\epsilon_{\lambda E}$ and $T_R$ was weak ($r = 0.25$) (i.e., 6% error) and $\epsilon_{\lambda E}$ distribution was positively skewed when $T_R > 45^\circ\text{C}$ (Figure 10g).
+As shown in Figure 10h, the proportion of systematic error was higher in $\lambda E$ ($RMSD_s^2 / RMSD^2 = 0.70$) compared to $H$ ($RMSD_s^2 / RMSD^2 = 0.35$).
+Both the residual errors were weakly correlated with $\phi$ ($r = \pm0.18$) (i.e., 3% error) as also evidenced in Figure 10i.
+Figure 10j also brings out the fact that although the systematic errors in both $H$ and $\lambda E$ were larger for the smaller values of $\phi$, the magnitude of $RMSD_s^2 / RMSD^2$ is reduced at high values of $\phi$ (Figure 10j).
+To probe the errors of the surface fluxes, we further investigated the $\lambda E$ RMSD in relation to the retrieved $M$ for the BEAREX08 and FIFE experiments (Figure 11) (because of the longer durations of these two experiments as compared to the others).
+The analysis revealed that the majority of the RMSD in $\lambda E$ originated under substantial surface dryness conditions when $M$ was between 0 and 0.25, after which the RMSD is reduced significantly.
+For the BEAREX08, the RMSD in $\lambda E$ is reduced by 32% to 89% (from $65\ \text{to}\ 44, 25, \text{ and } 5\ \text{W}\ \text{m}^{-2}$ with increasing $M$) and for FIFE the RMSD is reduced by 48% to 75% (from $68\ \text{to}\ 35, 17, \text{ and } 21\ \text{W}\ \text{m}^{-2}$ with increasing $M$) (Figure 11).
+---
+
+## 5. Discussion
+The surface flux estimates from STIC are able to capture the observed high-temporal frequency dynamics of the fluxes covering a wide range of surface and environmental conditions and provide reasonable estimates of $\lambda E$ (and $H$).
+Among the two surface fluxes, $H$ was relatively more sensitive to the errors in $T_R$ (Figure 5).
+Since the difference between $T_R$ and $T_A$ is considered to be the primary driving force of $H$ [van der Tol et al., 2009] the modeled flux estimates responded as expected due to the uncertainties in $T_R$.
+Among the two conductances, the relatively greater sensitivity of $g_s$ toward $T_R$ uncertainty (Figure 5) is attributed to the high response of $g_s$ to moisture transport in the soil-plant-atmosphere system [Manzoni et al., 2013].
+This could also be associated with the intrinsic link between $g_s$ and $T_R$ through the surface energy balance [Campbell and Norman, 1998].
+Overall, the high sensitivity of the fluxes and conductances to $T_R$ stresses the need for high-quality $T_R$ data in surface energy balance modeling.
+It is also important to mention that uncertainties in $T_R$ will also amplify the uncertainties both in $R_N$ and $G$, but to a small extent (to the order of 2–6% per $\pm 1\ \text{K}$ uncertainty in $T_R$) [Mallick et al., 2015], and, therefore additional uncertainties expected from $T_R$ induced through $\phi (= R_N - G)$ would be of minor importance.
+Analysis of the surface energy fluxes obtained from STIC over a broad range of surface and atmospheric conditions showed that this approach can estimate $\lambda E$ within 71–96% of EC observations at half-hourly to hourly scale.
+Similarly, the estimated $H$ was within 62–85% of the EC observations (Figure 6).
+The origin of the discrepancies between modeled and measured $H$ in SMEX02 and SAFARI2000 is unclear (Figures 6a, 6b, and 6f).
+Surface flux data obtained from the FIFE campaign were more vulnerable to errors because these fluxes are the average from 16 Bowen ratio flux stations and 6 EC towers [Betts and Ball, 1998].
+In addition, the meteorological and radiation variables are the averages from many Portable Automatic Meteorological (PAM) stations and no attempts were made to account for land cover and terrain influence during the data averaging [Betts and Ball, 1998].
+Therefore, the discrepancies between modeled and measured $H$ in FIFE may be due to a combination of individual errors arising from data averaging of both the EC flux and AMS measurements.
+For BEAREX08, the larger errors in $H$ (and $\lambda E$ also) (Figures 6c, 7e, and 7f) might have originated from ignoring the advection effects in the formulation of STIC or, more specifically due to excluding the role of wind speed in the scheme (which could be significant under high $D_A$).
+Large scale horizontal advection was dominant during BEAREX08 [Alfieri et al., 2012;
+Prueger et al., 2012] where parcels of irrigated cropland were in juxtaposition with hot and dry contrasting surfaces.
+This caused entrainment of dry and warm air from adjacent unirrigated fields, which increases the vapor pressure deficit (high evaporative demand) of the overlying air, resulting in large evaporative fluxes in excess of the net available energy over the irrigated fields [Alfieri et al., 2012;
+Prueger et al., 2012]. This led to very low values of $H$ during midday, where heat was extracted from the dry air layer to drive the evaporation process.
+Under these conditions the potential evaporation ($E_p$) is greater than the available energy ($\phi$) and the advective energy is defined as $\Delta_A = \lambda E_p - \phi$ [Prueger et al., 1996].
+This advective energy is added to $\lambda E$ at the cost of reducing the sensible heat flux by the same amount [Prueger et al., 1996].
+Although the impact of advection was implicitly included in the final estimation of $H$, it was not sufficient to account for such anomalous conditions.
+This clearly points toward a need to better understand surface energy balance exchange for heterogeneous surfaces in arid and semiarid regions under conditions of strong local and regional advection.
+However, since the eddy covariance measurements of surface fluxes are not immune to the effects of land surface heterogeneity [Alfieri et al., 2012], uncertainties associated with the surface flux measurements will also impact the results to some extent.
+The observed differences between the predicted fluxes by STIC and observations could partly be attributed to the different spatial representativeness of the $T_R$ observations and flux measurements, which could not be accounted for by STIC.
+Since all the $T_R$ measurements were conducted at 2 m above the surface, therefore the footprint size of $T_R$ was also 2 m, whereas the EC surface flux observations generally have a footprint of 200–300 m upwind [Norman et al., 2000].
+Consequently, besides the requirement of simultaneous ground-based $T_R$ and EC flux observations, the $T_R$ measurements have to be calibrated using data that are more representative of the flux footprint area in order to obtain better agreement between predicted and observed surface fluxes [cf.
+Norman et al., 2000]. The errors in the surface emissivity correction during the calibration of TIR instruments should also be reduced for improving the accuracy of the $T_R$ measurements.
+Marginal improvements in $T_R$ based surface flux predictions over the SMEX02 (Figure 9) might be due to low surface to atmospheric water demand (and low thermal stress) during the limited study period and $R_H$ based predictive fluxes are comparable to the $T_R$ based surface fluxes.
+For the other experiments, although the $R_H$ based method could reproduce the observed fluxes moderately well, this method led to consistent overestimation under strong advection (as found in BEAREX08) as well as under high surface to atmospheric water demand conditions (as found in SAFARI 2000 and FIFE) (Figure 9).
+An atmosphere with low $D_A$ and high $R_H$ indicates a moist humid atmosphere, but the underlying surface may be water stressed.
+$R_H$ based $M$ estimates will portray a wet surface condition for an otherwise dry surface, leading to $\lambda E$ being overestimated ($H$ being underestimated).
+Similarly an atmosphere with high $D_A$ and low $R_H$ will portray a dry surface condition when actually it is wet, leading to $\lambda E$ being underestimated.
+Relatively low to moderate improvements in the $\lambda E$ and $H$ estimates between $T_R$ based hysteretic and nonhysteretic events (Figure 9) might be due to the occurrence of few hysteretic events during the experimental phase where $\lambda E$ was controlled by the stomata in the presence of both high $D_A$ and water stress.
+It is apparent that the residual errors at high $W_s$ values became greater under increasing atmospheric moisture deficits, indicating that the effectiveness of wind increases with increasing $D_A$ (Figures 10c and 10e).
+Increase in the residual errors at low to moderate values of $W_s$ with high atmospheric moisture deficits can also be expected (as seen in BEAREX08) if wind is the only source of variation in the $\lambda E$ observations at high $D_A$.
+The data used in the present study do not cover the full growing season.
+There may be more frequent conditions having high $W_s$ and high $D_A$ later in the season under maximum vegetation cover conditions which may lead to additional $\lambda E$ (and $H$) errors.
+Relatively higher errors under high surface dryness (Figure 11) also highlighted the additional challenge in estimating $\lambda E$ using the PM model and its application to dry surfaces where $T_R$ remains well above that of the air temperature at the reference height.
+Under these conditions, the proper application of the PM equation requires iterative solution of $T_0$ via the energy balance so that the PM equation essentially decomposes back to its original energy and radiation balance components [Allen, 2013].
+Relatively high RMSD in $\lambda E$ for low surface moisture availability range might also be attributed to expressing $e_0^*$ at $T_R$ which suggests that the representation of $e_0^*$ in STIC should be further developed.
+Estimating in-canopy vapor pressure deficit (or aerodynamic $e_0$ and $e_0^*$) might have an important effect for sparse vegetation or dry bare surfaces where both $e_0$ and $e_0^*$ are influenced by a combination of conductance, net available energy, and surface moisture.
+Although the performance of STIC in comparison to other TIR remote sensing-based $\lambda E$ modeling approaches cannot be directly assessed without independently evaluating STIC using remote sensing data, the error statistics obtained from the STIC approach can still be compared with other studies that earlier used in situ $T_R$ measurements and tower meteorology for evaluating the surface energy fluxes in a single-source or two-source framework.
+Using hourly measurements of $T_R$, associated meteorological-micrometeorological variables and a two-source energy balance model (TSEB), Anderson et al.
+[2012] reported RMSD in daily $\lambda E$ and $H$ of $1.5-1.8 \text{ and } 1.1-2.1\ \text{MJ}\ \text{m}^{-2}\ \text{d}^{-1}$ respectively, using the BEAREX08 data.
+Kustas et al. [2012] applied two different thermal $\lambda E$ models (TSEB, Two-source Surface Energy Balance and DTD, Dual Temperature Difference) to a different data set from the same experiment and reported mean bias in $H$ and $\lambda E$ to the order of $-8\ \text{to}\ -40\ \text{W}\ \text{m}^{-2}$ and $18\ \text{to}\ 31\ \text{W}\ \text{m}^{-2}$, respectively.
+Using the TSEB model, Norman et al. [1995] earlier reported MAPD in $\lambda E$ and $H$ to the order of 17% and 32% using the FIFE experimental data.
+Using a single-source surface energy balance model (SEBS), Su [2002] reported RMSD of $61.34-82.79\ \text{W}\ \text{m}^{-2}$ for $\lambda E$ and $28.61-36.19\ \text{W}\ \text{m}^{-2}$ for $H$ over semiarid shrub and grasses.
+STIC produced a relatively lower hourly and daily RMSD for both $\lambda E$ and $H$ when applied to a variety of atmospheric turbulence conditions (from stable to strongly advective) as well as different land use types (see Table 2 and Figures 6, 7).
+However, the above studies used modeled $R_N$ and $G$ whereas STIC utilized all the input variables from in situ measurements.
+STIC has the advantage of being independent of any land surface parameterization to derive $g_B$ and $g_s$ that are typically required to model $\lambda E$ and $H$.
+The use of $T_R$ and the temperature-saturation vapor pressure slopes to estimate the near surface moisture and vapor pressure (Figure A2) provided the information on lower boundary conditions for $\lambda E$ and $H$.
+The signal of surface roughness is also implicitly included in $T_R$ (high roughness and dense vegetation will cause $T_R$ to approach $T_A$), $R_N$ (through albedo and surface emissivity), and $G$ measurements that are direct inputs into STIC.
+Current results also indicate the efficiency of $T_R$ information in capturing the temporal variability of surface fluxes within the PM framework in comparison to the methods that use relative humidity and $D_A$ to constrain $\lambda E$ and $H$ estimates [Mallick et al., 2013].
+---
+
+## 6. Conclusions
+The analytical method presented in the framework of STIC demonstrated a physical integration of $T_R$ into the PM equation to derive a "closure."
+STIC has the potential for simultaneously estimating surface energy fluxes, conductances, and Priestley-Taylor parameter under limited surface-atmospheric conditions using the measurements of $T_R$, $R_N$, $G$, $T_A$, and $R_H$.
+These measurements are robust, simple to conduct, less expensive than EC or Bowen ratio measurements, and, therefore in many weather stations the inclusion of $T_R$ and $G$ sensors would be beneficial to obtain an estimate of the surface energy fluxes using the STIC methodology.
+One of the novel aspects of STIC is the dynamic update of the Priestley-Taylor coefficient through numerical iteration and determining $\alpha$ under limiting (or actual) environmental as well as surface ecohydrological conditions.
+This also makes STIC fluxes independent of the uncertainties associated in assigning $\alpha$ as a single parameter [Mallick et al., 2014].
+Overall, the STIC is a self-contained approach, which does not require measured wind speed data and conductance parameterizations.
+Besides featuring logistical advantages over the parameterization-based thermal surface energy balance models, the deviations from observations of $\lambda E$ and $H$ are significantly lower.
+It should also be noted that although the case study described here provides general insights into thermal remote sensing of $\lambda E$ and $H$ in the framework of the PM equation, these results may also to some extent be specific to the particular set of observational and land surface data used in this study.
+In other semiarid, arid, and hyper-arid landscapes, where moisture variability is more random and controlled by land-atmosphere-moisture interaction (particularly by relationships between $R_N\text{--}T_R\text{--}D_A$ interaction and soil moisture), different results may potentially be obtained.
+The most realistic and accurate description of evaporation from terrestrial vegetation is obtained by the PM equation, which is also considered as the ubiquitous equation for quantifying the response and feedback between vegetation and water cycle.
+This equation incorporates the combined effects of environmental, physical, and ecophysiological variables on $\lambda E$.
+While $g_B$ describes the physical controls on evaporation containing information of atmospheric turbulence and vegetation roughness, $g_s$ describes the ecophysiological controls of transpiration by the vegetation and is a compound of the leaf area index and the stomatal conductance.
+Changes in the vegetation dynamics, for instance, due to land use change, plant water stress and drought, are reflected in both the conductances because any change in the vegetation cover will alter the surface roughness, wind fields, leaf area, radiative interception, and local micrometeorology.
+This will automatically lead to changes in the land-atmosphere interaction, evaporation-transpiration partitioning and associated heat fluxes;
+which will further make alterations in the cloud formation and precipitation [Santanello et al., 2013].
+The accurate quantification of these changes requires surface energy flux estimation methods which are not conditional on the land surface parameterization.
+The STIC framework exploits the advection-aridity hypothesis and associated assumptions, but is independent of any exogenous semiempirical models for determination of complex turbulence and surface conductance and hence may be a valuable tool to quantify vegetation-water cycle interactions.
+Under the full vegetation cover conditions, the STIC framework can also be used to calculate the canopy conductance, thus creating a framework for comparing different $g_s$ schemes within land surface models of varying complexity.
+However, under the partial vegetation cover conditions, $\lambda E$ derived through STIC needs to be partitioned into transpiration and evaporation to determine the stomatal conductance.
+This assumption needs to be tested further.
+
+It is worth mentioning that there is further scope for improving the STIC methodology by incorporating the wind speed information and retrieving the aerodynamic vapor pressure (or within canopy vapor pressure deficit) at the level where the aerodynamic temperature ($T_0$) is retrieved.
+For the regional application of STIC using thermal remote sensing, $M$ can also be derived in the framework of TVDI [Sandholt et al., 2002] or apparent thermal inertia (ATI) [Verstraeten et al., 2006] by exploiting the satellite-derived $T_R$ in conjunction with vegetation index and albedo, respectively.
+The ATI approach is already implemented to estimate $M$ with higher accuracy [Garcia et al., 2013], rather than estimating $M$ based on the complementary hypothesis of Bouchet [1963].
+Exploring the feasibility of implementing STIC at larger spatial scales is an ongoing research topic.
+STIC needs measurements of $T_A$ and $R_H$ and for regional applications the accuracy of these two meteorological variables is very important.
+In addition, an uncertainty of 1 K in $T_R$ appears to cause high errors in the conductance and surface fluxes, which implies that $T_R$ has to be measured with an accuracy of at least 0.5 K. This requirement makes the application of this model challenging with satellite data notably over those areas where $T_R$ retrieval errors are generally high due to inaccurate surface emissivity correction.
+The availability of Earth observation data may provide an opportunity to extend the STIC methodology into the satellite platform by integrating the radiative flux information from Clouds and the Earth's Radiant Energy System (CERES) or Surface Radiation Budget (SRB), $T_R$ and meteorological information from the Atmospheric Infrared Sounder (AIRS), Moderate Resolution Imaging Spectroradiometer (MODIS), Visible Infrared Imager Radiometer Suite (VIIRS) or future Sentinel-3 (dual view angle $T_R$ from SLSTR, Sea and Land Surface Temperature Radiometer sensor), and soil moisture from the future Soil Moisture Active Passive (SMAP), thus allowing for more spatially explicit surface energy balance modeling and ecohydrological process 
+studies.
+
+---
+
+## Appendix A
+
+### A1. Advection-Aridity Hypothesis and $\Lambda$
+To close the system of equations (in section 2) we need an expression for the evaporative fraction, $\Lambda$, which must include the dependence of $\Lambda$ on the conductances.
+Therefore, we exploited two different representations of evaporation: the Penman (P) equation [Penman, 1948], and the Priestley-Taylor (PT) equation [Priestley and Taylor, 1972].
+These two expressions are related to each other through the complementary relationship advection-aridity hypothesis [Brutsaert and Stricker, 1979] which is a modification of the original complementary hypothesis [Bouchet, 1963].
+According to the complementary hypothesis, for a large homogeneous area of 1–10 km and away from sharp environmental discontinuities there exists a complementary feedback mechanism between potential evaporation ($E^*$), evaporation ($\lambda E$), and sensible heat flux ($H$) of the following form:
+
+$$\lambda E + \lambda E^* = 2\lambda E_W \tag{A1}$$
+
+$\lambda E^*$ is defined as the evaporation from a wet surface under the prevailing atmospheric condition, limited only by the amount of available energy.
+If moisture at the surface is unlimited (i.e., when $M=1$), $\lambda E = \lambda E^*$ and this condition is referred to as the wet-environment evaporation ($\lambda E_W$).
+Based on Bouchet's work, Brutsaert and Stricker [1979] proposed an advection-aridity hypothesis that allows the formulation of $E$ under nonpotential conditions.
+According to Brutsaert and Stricker [1979], $E_W$ was approximated as the potential evaporation according to Priestley and Taylor [1972], $\lambda E_{PT}^*$, which represents the potential evaporation under the conditions of minimal advection and $\lambda E^*$ was approximated as the potential evaporation according to Penman [1948], $\lambda E_P^*$ in order to capture the effects of large scale advection.
+Thus actual evapotranspiration could be computed by means of equation (A1) assuming $\lambda E^* = \lambda E_P^*$ and $\lambda E_W = \lambda E_{PT}^*$ [Brutsaert and Stricker, 1979;
+Parlange and Katul, 1992; Ramirez et al., 2005; Huntington et al., 2011]:
+
+$$\lambda E + \lambda E_P^* = 2\lambda E_{PT}^* \tag{A2}$$
+
+This approach is independent of any submodel for representing the surface (or stomatal) conductance, soil moisture, or any other land surface measures of aridity.
+Taking advantage of this advection-aridity hypothesis we are able to express $\Lambda$ in terms of the two conductances ($g_B$ and $g_s$) and hence able to close the system of equations in the present scheme as described in section 2 [see also Mallick et al., 2014].
+Although some theoretical arguments suggest partial fulfillment of the hypothesis of 1:1 compensation between $E$ and $E^*$ [Lhomme, 1997;
+Sugita et al., 2001], more recently Ramirez et al. [2005] found observational evidence for 1:1 compensation between $\lambda E$ and $\lambda E^*$.
+We have also explored the potential complementary feedbacks between the atmosphere and the surrounding environment by relating high-temporal frequency $E_P^*$ and $E$ as a function of the surface moisture availability ($M$) following Huntington et al.
+[2011]. Figure A1a illustrates the complementary behavior between $\lambda E_P^*$ and $E$ with quite scattered data points.
+However, an ideal complementarity could only be obtained by normalizing $\lambda E_P^*$ and $\lambda E$ by $\lambda E_W$ [Huntington et al., 2011;
+Kahler and Brutsaert, 2006] as shown in Figure A1b, where a complementary relationship between $\lambda E_P^*$ and $E$ is clearly evident.
+However, during the winter months $\lambda E_W$ can be less than $\lambda E_P^*$, which might inflate the $\lambda E_P^*/\lambda E_W$ ratio thus resulting in asymmetry in the complementary relationship [Huntington et al., 2011].
+### A2. Derivation of $M$
+The retrieval of $M$ is already described in Mallick et al.
+[2014] (as adopted from Venturini et al. [2008]). We hypothesize that the moisture availability at the surface and at the evaporating front are uniform and, therefore, $M$ is derived from the surface-atmosphere information.
+According to Noilhan and Planton [1989], Ye and Pielke [1993], and Boegh et al.
+[2002], the transfer of $E$ from the surface can also be written as follows:
+
+$$\lambda E = \frac{\rho c_p}{\gamma} g_B (e_s - e_A) = M \lambda E^* = \frac{\rho c_p}{\gamma} M g_B (e_s^* - e_A) \tag{A3}$$
+
+From equation (A3), a physical expression for $M$ is given in terms of the temperature gradients:
+
+$$M = \frac{(e_s - e_A)}{(e_s^* - e_A)} = \frac{s_1 (T_{SD} - T_D)}{s_2 (T_R - T_D)} \tag{A4}$$
+
+where $s_1$ and $s_2$ are the slopes of the saturation vapor pressure and temperature between $(T_{SD} - T_D)$ versus $(e_s - e_A)$ and $(T_R - T_D)$ versus $(e_s^* - e_A)$ relationships.
+Figures A2a and A2b show the relationships between $e_s$, $e_s^*$, and $e_A$ and their corresponding temperatures.
+By analogy to the dewpoint temperature, $T_D$, if the surface air is brought to saturation without affecting $e_s$ then $e_s = f(T_{SD})$.
+Thus, $T_{SD} < T_R$ for unsaturated surfaces and $T_{SD} \rightarrow T_R$ as the surface tends to saturation.
+For a dry surface $T_R \gg T_{SD}$, $e_s^* \gg e_s$, $(T_R - T_D) \gg (T_{SD} - T_D)$, and $M \rightarrow 0$.
+For a wet surface $e_s^* \cong e_s$, $T_R \cong T_{SD}$, $(T_R - T_D) \cong (T_{SD} - T_D)$, and $M \rightarrow 1$.
+When condensation occurs, $T_R < T_A$ and $e_s < e_A$, otherwise $e_s > e_A$ and $e_s^* > e_s$.
+Hence, $T_{SD}$ falls somewhere between $T_R$ and $T_D$ (Figure A2a) and can be computed by linearizing the saturation vapor pressure curve between the two levels $(T_D, T_{SD})$ and $(T_{SD}, T_R)$ [Monteith, 1965].
+Since $T_R$ and $e_A$ are available, $s_2$ can be calculated directly.
+However, when the differences in $T_R$ and $T_A$ are very large, the assumption of linearity of the saturation vapor pressure and temperature may produce errors [Jackson et al., 1981].
+Therefore, in the present study the linearity is assumed until the difference between $T_R$ and $T_A$ is $5^\circ\text{C}$ [Jackson et al., 1981] after which $s_2$ is approximated at $T_R$.
+According to Figure A2,
+
+$$s_1 = \frac{(e_s - e_A)}{(T_{SD} - T_D)} \tag{A5}$$
+
+$$s_3 = \frac{(e_s^* - e_s)}{(T_R - T_{SD})} \tag{A6}$$
+
+Combining equations (A5) and (A6), an expression of $T_{SD}$ can be obtained:
+
+$$T_{SD} = \frac{(e_s^* - e_A) - s_3 T_R + s_1 T_D}{(s_1 - s_3)} \tag{A7}$$
+
+Here we have one equation (A7) and two unknowns ($s_1$ and $s_3$), which is not uniquely solvable using the assumptions and the iterative procedure described in Venturini et al.
+[2008] as adopted by Mallick et al. [2014]. However, in a more recent follow-up study, Venturini et al.
+[2012] proposed a simplified method of $T_{SD}$ estimation. Following Venturini et al.
+[2012], we similarly revise some aspects of $T_{SD}$ estimation in the present analysis, by directly assigning $s_3$ as a function of $T_R$ and $s_1$ as a function of $T_D$, the general form of which is:
+
+$$s = 4098 \frac{6.108 e^{\frac{17.27 T}{T + 237.3}}}{(T + 237.3)^2}$$
+
+According to Figure A2b, $T_R$ and $T_D$ are the two end-member temperatures of the saturation vapor pressure-temperature curve.
+Under extremely dry surface conditions $T_{SD} \rightarrow T_D$, while under extremely wet conditions $T_{SD} \rightarrow T_R$.
+Therefore, $T_{SD}$ at any point of time is a blend of these two end-member temperatures ($T_R$ and $T_D$) depending on the degree of surface dryness/wetness, atmospheric humidity, and surface-atmospheric coupling.
+Considering different sets of surface-atmospheric dryness/wetness conditions, the following situations may occur:
+
+1. **Surface and atmosphere both are extremely dry:** This implies a strong surface-atmosphere coupling, typical conditions found in dry-tropical, arid, semiarid, hyper-arid, savanna, and Mediterranean climates.
+$T_R$ is extremely high and $T_D$ is very low (because of low atmospheric humidity).
+Under such conditions $T_{SD}$ will be very close to $T_D$ and the difference between $T_R$ and $T_{SD}$ will be very large.
+Assigning $s_1$ at $T_D$ and $s_3$ at $T_R$ will reasonably constrain equation (A7) because $s_3 \text{ (actual)} \gg s_1 \text{ (actual)}$ in such circumstances and $s_3(T_R) \text{ (virtual)}$ will also be significantly higher than $s_1(T_D) \text{ (virtual)}$ under such conditions.
+2. **Surface and atmosphere both are wet:** This implies a weak surface-atmosphere coupling, typical conditions found in wet tropical and wet temperate regions or during rainy seasons.
+Here $T_R$ is substantially low, $T_D$ is reasonably high (because of high atmospheric humidity), leading to very low $T_R - T_D$.
+Under such conditions $T_{SD}$ will be very close to $T_R$ because of high surface humidity and the difference between $T_R$ and $T_{SD}$ will be very small.
+Therefore, assigning $s_1$ at $T_D$ and $s_3$ at $T_R$ will again reasonably constrain equation (A7) because $s_3 \text{ (actual)}$ will be close to $s_1 \text{ (actual)}$ in such circumstances and $s_3(T_R) \text{ (virtual)}$ will also be close to $s_1(T_D) \text{ (virtual)}$.
+3. **Surface is dry and atmosphere is moist:** This implies moderate surface-atmosphere coupling, typical conditions found in tropical monsoon climates before the onset of rainfall when water vapor in the atmosphere increases but the surface remains dry due to no rainfall.
+Arid and semiarid areas close to the sea (e.g., Mediterranean) with high atmospheric water vapor and dry soil conditions also belong to this category.
+Here $T_R$ is moderate to high, $T_D$ is high due to the high atmospheric water vapor, and $T_R - T_D$ is moderate to low.
+Under such conditions the magnitude of $T_R - T_{SD}$ will be high (because of high surface dryness).
+Therefore, assigning $s_1$ at $T_D$ and $s_3$ at $T_R$ will also reasonably constrain equation (A7) because $s_3 \text{ (actual)}$ will be bigger than $s_1 \text{ (actual)}$ in such circumstances and $s_3(T_R) \text{ (virtual)}$ will also be larger than $s_1(T_D) \text{ (virtual)}$.
+In order to support the above assumptions, the following analysis has been carried out.
+
+### A3. Evaluating $M$ at Landscape and Field Scale
+Taking monthly MERRA (Modern Era Retrospective-analysis for Research and Applications) data, we have estimated $T_{SD}$ and $M$ following the same procedure as described in the manuscript and compared these estimates against the simulated $T_{SD}$ and $M$ as available in the MERRA database.
+Here we treat MERRA as a synthetic data set and the 1:1 scatterplot between modeled versus synthetic $T_{SD}$ and $M$ are shown in Figures A3a and A3b for three different soil water availability classes (wet, intermediate, and dry).
+These classes represent $10 \times 10$ gridded data points over the Amazon Basin (wet), North-central Africa (dry), and North America (intermediate).
+This shows relatively good correspondence between the modeled versus synthetic $T_{SD}$ and $M$.
+The correlation between modeled and synthetic $T_{SD}$ was in the range of 0.46–0.97 ($p < 0.05$) (Table A1), whereas for $M$ the correlation varied from 0.16 to 0.68 ($p < 0.05$) for the three broad soil water availability subclasses (Table A1).
+Given $T_D$ is the lowermost temperature limit and $T_{SD}$ will be very low under dry conditions ($T_{SD} \rightarrow T_D$), we expect the difference of $(T_R - T_{SD})$ to be bigger for the dry cases and the differences to be small for the wet cases.
+Figure A3c also depicts similar behavior and this further proves the robustness of the assumptions made in the current $M$ estimation method.
+From this comparison it appears that although the simplified $M$ retrieval method performed substantially well at capturing the general wetness patterns for the two extreme climatic categories (wet, dry) along the 1:1 line, it is not capable of capturing the wetness variations within the intermediate dry-wet climatic region (Figure A3b).
+However, these results are based on the synthetic data and any error in the MERRA data simulation of $M$, $T_R$, $T_D$, and $T_{SD}$ will affect this evaluation.
+We have also compared the $M$ estimation method by comparing the STIC-based $M$ estimates ($M_{\text{STIC}}$) against TVDI (Temperature Vegetation Dryness Index) [Sandholt et al., 2002] derived $M$ estimates ($M_{\text{TVDI}}$) by using the data of Mallick et al.
+[2009] over different agroecosystems in India (Figure A3d). For more details about the data and agroecosystems, see Mallick et al.
+[2009]. This also shows reasonably good correspondence where $M_{\text{STIC}}$ could explain 64% variability of $M_{\text{TVDI}}$ and the RMSD between the two wetness estimates was 0.07.
+These two case studies seemingly depict the validity of the assumptions used for estimating $M$ in the current manuscript.
+However, a detailed study is further needed for assessing the impact of different $M$ retrieval methodologies on the error propagation in $E$ and $H$ estimates.
+It is important to mention that the saturation vapor pressure (SVP) concept assumes a free pure water surface, where the forces holding the water molecules to the surface are the bonds between the nearest molecules.
+These bonds are broken by the thermal energy to produce the evaporation [Venturini et al., 2008].
+But for an unsaturated surface, where multiple forces hold the water to the soil vegetation interface, more thermal energy would be required to vaporize the soil-vegetation water molecules [Venturini et al., 2008].
+Therefore, vapor pressure ($e_0$ and $e_s$) for an unsaturated surface would be smaller than that derived from an SVP curve.
+This is the reason that $e_0$ estimation was based on $M$ and not on $T_{SD}$.
+
+---
+
+## Appendix B
+
+### B1. Modification of PMBL
+A modification of the original PMBL [Mallick et al., 2013] is performed to make the structure of PMBL identical to STIC but having $R_H$ (and $D_A$) as main variables for estimating $M$ and constraining the conductances.
+In the modified method, an initial estimate of the conductances, $T_0$, $\Lambda$, and $E$ are obtained by assigning $M=1$ and $e_0$ as saturation vapor pressure at $T_A$.
+From the initial $T_0$, initial $e_0^*$, $s_3$, and $T_{SD}$ (according to equation (A7)) were estimated.
+The process is then iterated by simultaneously updating $M$ (from the initial estimates of $T_0$, $s_3$, and $T_{SD}$ using equation (A4)), $e_0$ (according to equation (23)), conductances, $T_0$, and $\Lambda$ until a stable value of $\lambda E$ is achieved.
+Repeating this process produces stable values of $\lambda E$ within 10–12 iterations.
+---
+
+## References
+- Alfieri, J. G., W. P. Kustas, J. H. Prueger, L. E. Hipps, J. L. Chavez, A. N. French, and S. R. Evett (2011), Intercomparison of nine micrometeorological stations during the BEAREX08 field campaign, *J. Atmos. Oceanic Technol.*, 28, 1390–1406.
+- Alfieri, J. G., et al.
+(2012), On the discrepancy between eddy covariance and lysimetry-based surface flux measurements under strongly advective conditions, *Adv. Water Res.*, 50, 62–78.
+- Allen, R. G. (2013), How John Monteith's formulation of the Penman-Monteith equation helped to standardize the world of reference evapotranspiration, paper presented at Water, Food, energy & Innovation for a Sustainable World, ASA, CSSA & SSSA International Annual Meetings, Tampa, Fla, 3–6 Nov.
+- Anderson, M. C., J. M. Norman, G. R. Diak, W. P. Kustas, and J. R. Mecikalski (1997), A two-source time-integrated model for estimating surface fluxes using thermal infrared remote sensing, *Remote Sens. Environ.*, 60, 195–216.
+- Anderson, M. C., J. M. Norman, J. R. Mecikalski, J. A. Otkin, and W. P. Kustas (2007), A climatological study of evapotranspiration and moisture stress across the continental United States based on thermal remote sensing. 1: Model formulation, *J. Geophys. Res.*, 112, D10117, doi:10.1029/2006JD007506.
+- Anderson, M. C., J. M. Norman, W. P. Kustas, R. Houborg, P. J. Starks, and N. Agam (2008), A thermal-based remote sensing technique for routine mapping of land-surface carbon, water and energy fluxes from field to regional scales, *Remote Sens. Environ.*, 112, 4227–4241.
+- Anderson, M. C., et al. (2012), Mapping daily evapotranspiration at Landsat spatial scales during the BEAREX'08 field campaign, *Adv. Water Res.*, 50, 162–177.
+- Baldocchi, D. D., R. J. Luxmoore, and J. R. Hatfield (1991), Discerning the forest from the trees: An essay on scaling canopy stomatal conductance, *Agric. For. Meteorol.*, 54(2-4), 197–226.
+- Baldocchi, D. D., et al.
+(2001), Fluxnet: A new tool to study the temporal and spatial variability of ecosystem-scale carbon dioxide, water vapor, and energy flux densities, *Bull. Am. Meteorol. Soc.*, 82(11), 2415–2434.
+- Ball, J. T., I. E. Woodrow, and J. A. Berry (1987), A model predicting stomatal conductance and its contribution to the control of photosynthesis under different environmental conditions, in *Progress in Photosynthesis Research*, vol. 4, edited by J. Biggins and M. Nijhoff, pp. 5.221–5.224, Martinus Nijhoff, Dordrecht, Netherlands.
+- Bastiaanssen, W. G. M., M. Menenti, R. A. Feddes, and A. A. M. Holtslag (1998), A remote sensing surface energy balance algorithm for land (SEBAL). 1: Formulation, *J. Hydrol.*, 212-213, 198–212.
+- Betts, A. K., and J. H. Ball (1998), FIFE surface climate and site-average data set 1987-1989, *J. Atmos. Sci.*, 55, 1091–1108.
+- Beven, K. (1979), A sensitivity analysis of the Penman-Monteith actual evapotranspiration estimates, *J. Hydrol.*, 44(3-4), 169–190.
+- Blonquist, J. M., J. M. Norman, and B. Bugbee (2009), Automated measurement of canopy stomatal conductance based on infrared temperature, *Agric. For. Meteorol.*, 149, 1931–1945.
+- Boegh, E., and H. Soegaard (2004), Remote sensing based estimation of evapotranspiration rates, *Int. J. Remote Sens.*, 25(13), 2535–2551.
+- Boegh, E., H. Soegaard, N. Hannan, P. Kabat, and L. Lesch (1999), A remote sensing study of the NDVI-TS relationship and the transpiration from sparse vegetation in the Sahel based on high-resolution satellite data, *Remote Sens. Environ.*, 96, 224–240.
+- Boegh, E., H. Soegaard, and A. Thomsen (2002), Evaluating evapotranspiration rates and surface conditions using Landsat TM to estimate atmospheric resistance and surface resistance, *Remote Sens. Environ.*, 79, 329–343.
+- Bouchet, R. J. (1963), Evapotranspiration réelle et potentielle, signification climatique, *Int. Assoc. Sci. Hydrol.*, 62, 134–142.
+- Bowen, I. S. (1926), The ratio of heat losses by conduction and by evaporation from any water surface, *Phys. Rev.*, 27, 779–787.
+- Brutsaert, W., and H. Stricker (1979), An advection-aridity approach to estimate actual regional evapotranspiration, *Water Resour. Res.*, 15(2), 443–450.
+- Buck, A. L. (1981), New equations for computing vapor pressure and enhancement factor, *J. Appl. Meteorol.*, 20, 1527–1532.
+- Campbell, G. S., and J. M. Norman (1998), *An Introduction to Environmental Biophysics*, Springer, New York.
+- Chavez, J. L., C. M. U. Neale, L. E. Hipps, J. H. Prueger, and W. P. Kustas (2005), Comparing aircraft-based remotely sensed energy balance fluxes with eddy covariance tower data using heat flux source area functions, *J. Hydrometeorol.*, 6, 923–940.
+- Clean, H. A., R. Leuning, Q. Mu, and S. W. Running (2007), Regional evaporation estimates from flux tower and MODIS satellite data, *Remote Sens. Environ.*, 106, 285–304.
+- Colaizzi, P. D., et al. (2012), Two-source energy balance model estimates of evapotranspiration using component and composite surface temperatures, *Adv. Water Res.*, 50, 134–151.
+- Dewar, R. C. (1995), Interpretation of an empirical model for stomatal conductance in terms of guard cell function, *Plant Cell Environ.*, 18(4), 365–372.
+- Ershadi, A., M. F. McCabe, J. P. Evans, N. W. Chaney, and E. F. Wood (2014), Multi-site evaluation of terrestrial evaporation models using FLUXNET data, *Agric. For. Meteorol.*, 187, 46–61.
+- Evett, S. R., W. P. Kustas, P. H. Gowda, M. C. Anderson, J. H. Prueger, and T. A. Howell (2012), Overview of the Bushland evapotranspiration and agricultural remote sensing experiment 2008 (BEAREX08): A field experiment evaluating methods for quantifying ET at multiple scales, *Adv. Water Res.*, 50, 4–19.
+- Garcia, M., L. Sandholt, P. Ceccato, M. Ridler, E. Mougin, L. Kergoat, L. Morillas, F. Timouk, R. Fensholt, and F. Domingo (2013), Actual evapotranspiration in drylands derived from in-situ and satellite data: Assessing biophysical constraints, *Remote Sens. Environ.*, 131, 103–118.
+- Granger, R. J., and D. M. Gray (1989), Evaporation from natural nonsaturated surfaces, *J. Hydrol.*, 111, 21–29.
+- Hall, F. G., K. F. Huemmrich, S. J. Goetz, P. J. Sellers, and J. E. Nickeson (1992), Satellite remote sensing of surface energy balance: Success, failures and unresolved issues in FIFE, *J. Geophys. Res.*, 97(D17), 19,061–19,089.
+- Huband, N. D. S., and J. L. Monteith (1986), Radiative surface temperature and energy balance of a wheat canopy. I: Comparison of radiative and aerodynamic canopy temperature, *Boundary Layer Meteorol.*, 36, 1–17.
+- Huntington, J. L., J. Szilagyi, S. Tyler, and G. Pohll (2011), Evaluating the complementary relationship for estimating evapotranspiration from arid shrublands, *Water Resour. Res.*, 47, W05533, doi:10.1029/2010WR009874.
+- Jackson, R. D., S. B. Idso, R. J. Reginato, and P. J. Pinter Jr. (1981), Canopy temperature as a crop water stress indicator, *Water Resour. Res.*, 17(4), 1133–1138.
+- Jarvis, P. G., (1976), The interpretation of leaf water potential and stomatal conductance found in canopies in the field, *Philos. Trans. R. Soc. London B*, 273, 593–610.
+- Kahler, D. M., and W. Brutsaert (2006), Complementary relationship between daily evaporation in the environment and pan evaporation, *Water Resour. Res.*, 42, W05413, doi:10.1029/2005WR004541.
+- Kanemasu, E. T., et al. (1992), Surface flux measurements in FIFE: An overview, *J. Geophys. Res.*, 97(D17), 18,547–18,556.
+- Katul, G. G., S. Manzoni, S. Palmroth, and R. Oren (2010), A stomatal optimization theory to describe the effects of atmospheric $CO_2$ on leaf photosynthesis and transpiration, *Ann. Bot.*, 105(3), 431–442.
+- Kustas, W. P., and M. C. Anderson (2009), Advances in thermal infrared remote sensing for land surface modeling, *Agric. For. Meteorol.*, 149, 2071–2081.
+- Kustas, W. P., and J. M. Norman (1999), Evaluation of soil and vegetation heat flux predictions using simple two-source model with radiometric temperature for partial canopy cover, *Agric. For. Meteorol.*, 94, 13–29.
+- Kustas, W. P., J. L. Hatfield, and J. H. Prueger (2005), The Soil Moisture-Atmosphere Coupling Experiment (SMACEX): Background, hydrometeorological conditions, and preliminary findings, *J. Hydrometeorol.*, 6, 791–804.
+- Kustas, W. P., et al. (2012), Evaluating the two-source energy balance model using local thermal and surface flux observations in a strongly advective irrigated agricultural area, *Adv. Water Res.*, 50, 120–133.
+- Lascano, R. J., and C. H. M. van Bavel (2007), Explicit and recursive calculation of potential and actual evapotranspiration, *Agron. J.*, 99, 585–590.
+- Lee, T. J., and R. Pielke (1992), Estimating the soil surface specific humidity, *J. Appl. Meteorol.*, 31, 480–484.
+- Leuning, R. (1995), A critical appraisal of a combined stomatal-Photosynthesis model for c3 plants, *Plant Cell Environ.*, 18, 339–355.
+- Lhomme, J. P. (1997), A theoretical basis for the Priestley-Taylor coefficient, *Boundary Layer Meteorol.*, 82, 179–191.
+- Lhomme, J. P., and C. Montes (2014), Generalized combination equations for canopy evaporation under dry and wet conditions, *Hydrol. Earth Syst. Sci.*, 18, 1137–1149.
+- Lhomme, J. P., A. Chehbouni, and B. Monteny (2000), Sensible heat flux-radiometric surface temperature relationship over sparse vegetation: Parameterizing B-1, *Boundary Layer Meteorol.*, 97(3), 431–457.
+- Liu, S., L. Lu, D. Mao, and L. Jia (2007), Evaluating parameterizations of aerodynamic resistance to heat transfer using field measurements, *Hydrol. Earth Syst. Sci.*, 11, 769–783.
+- Mallick, K., B. K. Bhattacharya, and N. K. Patel (2009), Estimating volumetric surface moisture content for cropped soils using a soil wetness index based on surface temperature and NDVI, *Agric. For. Meteorol.*, 149(8), 1327–1342.
+- Mallick, K., A. J. Jarvis, J. B. Fisher, K. P. Tu, E. Boegh, and D. Niyogi (2013), Latent heat flux and canopy conductance based on Penman-Monteith and Bouchet's complementary hypothesis, *J. Hydrometeorol.*, 14, 419–442.
+- Mallick, K., et al. (2014), A surface temperature initiated closure (STIC) for surface energy balance fluxes, *Remote Sens. Environ.*, 141, 243–261.
+- Mallick, K., et al. (2015), Components of near-surface energy balance derived from satellite soundings—Part 1: Noontime net available energy, *Biogeosciences*, 12, 433–451.
+- Manzoni, S., G. Vico, S. Palmroth, A. Porporato, and G. Katul (2013), Optimization of stomatal conductance for maximum carbon gain under dynamic soil moisture, *Adv. Water Res.*, 62, 90–105.
+- Monteith, J. L. (1965), Evaporation and environment, in *Symposium of the Society for Experimental Biology, The State and Movement of Water in Living Organisms*, vol. 19, edited by G. E. Fogg, pp. 205–234, Academic, N.Y.
+- Monteith, J. L. (1981), Evaporation and surface temperature, *Q. J. R. Meteorol. Soc.*, 107, 1–27.
+- Monteith, J. L. (1995), Accommodation between transpiring vegetation and the convective boundary layer, *J. Hydrol.*, 166, 251–263.
+- Mu, Q., F. A. Heinsch, M. Zhao, and S. W. Running (2007), Development of a global evapotranspiration algorithm based on MODIS and global meteorology data, *Remote Sens. Environ.*, 111, 519–536.
+- Mu, Q., M. Zhao, and S. W. Running (2011), Improvements to a MODIS global terrestrial evapotranspiration algorithm, *Remote Sens. Environ.*, 115, 1781–1800.
+- Noilhan, J., and S. Planton (1989), A simple parameterization of land surface processes for meteorological models, *Mon. Weather Rev.*, 117, 536–549.
+- Norman, J. M., W. P. Kustas, and K. S. Humes (1995), A two-source approach for estimating soil and vegetation energy fluxes in observations of directional radiometric surface temperature, *Agric. For. Meteorol.*, 77, 263–293.
+- Norman, J. M., W. P. Kustas, J. H. Prueger, and G. R. Diak (2000), Surface flux estimation using radiometric temperature: A dual-temperature-difference method to minimize measurement errors, *Water Resour. Res.*, 36(8), 2263–2274.
+- Parlange, M. B., and G. G. Katul (1992), An advection-aridity evaporation model, *Water Resour. Res.*, 28(1), 127–132.
+- Penman, H. L. (1948), Natural evaporation from open water, bare soil, and grass, *Proc. R. Soc. London, Ser. A*, 193, 120–146.
+- Pereira, A. R. (2004), The Priestley-Taylor parameter and the decoupling factor for estimating reference evapotranspiration, *Agric. For. Meteorol.*, 125, 305–313.
+- Priestley, C. H. B., and R. J. Taylor (1972), On the assessment of surface heat flux and evaporation using large scale parameters, *Mon. Weather Rev.*, 100, 81–92.
+- Prueger, J. H., L. E. Hipps, and D. I. Cooper (1996), Evaporation and the development of the local boundary layer over an irrigated surface in an arid region, *Agric. For. Meteorol.*, 78, 223–237.
+- Prueger, J. H., J. G. Alfieri, and L. E. Hipps (2012), Patch scale turbulence over dryland and irrigated surfaces in a semi-arid landscape under advective conditions during BEAREX08, *Adv. Water Res.*, 50, 106–119.
+- Ramirez, J. A., M. T. Hobbins, and T. C. Brown (2005), Observational evidence of the complementary relationship in regional evaporation lends strong support for Bouchet's hypothesis, *Geophys. Res. Lett.*, 32, L15401, doi:10.1029/2005GL023549.
+- Raupach, M. R., and J. J. Finnigan (1995), Scale issues in boundary-layer meteorology: Surface energy balance in heterogeneous terrain, *Hydrol. Processes*, 9, 589–612.
+- Sandholt, I., K. Rasmussen, and J. Andersen (2002), A simple interpretation of the surface temperature/vegetation index space for assessment of surface moisture status, *Remote Sens. Environ.*, 79, 213–224.
+- Santanello, J., C. D. Peters-Lidard, A. Kennedy, S. V. Kumar, and S. Zhou (2013), Diagnosing the nature of land-atmosphere coupling: A case study of dry/wet extremes in the U.S. Southern Great Plains, *J. Hydrometeorol.*, 14(1), 3–24, doi:10.1175/JHM-D-12-023.1.
+- Scholes, R. J., et al.
+(2002), Trends in savanna structure and composition on an aridity gradient, *J. Veg. Sci.*, 13, 419–428.
+- Segal, M., X. Jia, Z. Ye, and R. A. Pielke (1990), On the effect of daytime surface evaporation on pollution dispersion, *Atmos. Environ., Part A*, 24(7), 1801–1811.
+- Sellers, P. J., F. G. Hall, G. Asrar, D. E. Strebel, and R. E. Murphy (1992), An overview of the First International Satellite Land Surface Climatology Project (ISLSCP) Field Experiment (FIFE), *J. Geophys. Res.*, 97(D17), 18,345–18,371.
+- Shuttleworth, W. J., R. J. Gurney, A. Y. Hsu, and J. P. Ormsby (1989), FIFE: The variation in energy partition at surface flux sites, in *Remote Sensing and Large Scale Processes, Proceedings of the IAHS Third International Assembly*, vol. 186, edited by A. Rango, pp. 67–74, IAHS Publ., Baltimore, Md.
+- Su, Z. (2002), The surface energy balance system (SEBS) for estimation of turbulent heat fluxes, *Hydrol. Earth Syst. Sci.*, 61(1), 85–99.
+- Sugita, M., J. Usui, I. Tamagawa, and I. Kaihotsu (2001), Complementary relationship with convective boundary layer model to estimate regional evaporation, *Water Resour. Res.*, 37(2), 353–365.
+- Troufleau, D., J. P. Lhomme, B. Monteny, and A. Vidal (1997), Sensible heat flux and radiometric surface temperature over sparse Sahelian vegetation. I: An experimental analysis of $kB^{-1}$ parameter, *J. Hydrol.*, 188-189, 815–838.
+- van der Kwast, J., W. Timmermans, A. Gieske, Z. Su, A. Olioso, L. Jia, J. Elbers, D. Karssenberg, and S. de Jong (2009), Evaluation of the Surface Energy Balance System (SEBS) applied to ASTER imagery with flux-measurements at the SPARC 2004 site (Barrax, Spain), *Hydrol. Earth Syst. Sci.*, 13, 1337–1347.
+- van der Tol, C., S. van der Tol, A. Verhoef, B. Su, J. Timmermans, C. Houldcroft, and A. Gieske (2009), A Bayesian approach to estimate sensible and latent heat over vegetated land surfaces, *Hydrol. Earth Syst. Sci.*, 13, 749–758.
+- Venturini, V., S. Islam, and L. Rodriguez (2008), Estimation of evaporative fraction and evapotranspiration from MODIS products using a complementary based model, *Remote Sens. Environ.*, 112(1), 132–141.
+- Venturini, V., C. Krepper, and L. Rodriguez (2012), Evapotranspiration estimation based on the complementary relationships, in *Evapotranspiration-Remote Sensing and Modeling*, edited by A. Irmak, 526 pp., InTech, Nebr., doi:10.5772/725.
+- Verstraeten, W. W., F. Veroustraete, C. J. van der Sande, I. Grootaers, and J. Feyen (2006), Soil moisture retrieval using thermal inertia, determined with visible and thermal spaceborne data validated for European forests, *Remote Sens. Environ.*, 101, 299–314.
+- Willmott, C. J. (1982), Some comments on the evaluation of model performance, *Bull. Am. Meteorol. Soc.*, 63, 1309–1313.
+- Ye, Z., and R. Pielke (1993), Atmospheric parameterization of evaporation from non-plant-covered surfaces, *J. Appl. Meteorol.*, 32, 1248–1258.
+- Zhang, Q., S. Manzoni, G. Katul, A. Porporato, and D. Yang (2014), The hysteretic evapotranspiration-vapor pressure deficit relation, *J. Geophys. Res. Biogeosci.*, 119, 125–140, doi:10.1002/2013JG00244.
+- Zheng, H., Q. Wang, X. Zhu, Y. Li, and G. Yu (2014), Hysteresis responses of evapotranspiration to meteorological factors at a diel timescale: Patterns and causes, *PLOS One*, 9(6), e98857, doi:10.1371/journal.pone.0098857.9008.
+---
+
+## Erratum
+In the originally published article, the author name for the reference and citations "Collaizi et al, 2012" should have appeared as "Colaizzi et al., 2012."
+In Table 2, in the "Biome Type" column, row 2 should appear as "Agroecosystem (cotton)" instead of "Agroecosystem (corn and soybean)".
+This article may be considered the authoritative version of record.
