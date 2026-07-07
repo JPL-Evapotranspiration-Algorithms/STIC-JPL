@@ -320,6 +320,9 @@ def STIC_JPL(
                 G_method = G_method  # Method for calculating soil heat flux
             )
 
+        Es_hPa = e0
+        Estar_hPa = e0star
+
         phi_Wm2 = Rn_Wm2 - G_Wm2
 
         if use_variable_alpha:
