@@ -25,6 +25,21 @@ from carlson_fractional_vegetation_cover import carlson_fractional_vegetation_co
 from carlson_leaf_area_index import carlson_leaf_area_index
 
 from .constants import *
+from .constants import (
+    MALLICK2014_CONFIGURATION,
+    MALLICK2015_CONFIGURATION,
+    MALLICK2016_CONFIGURATION,
+    MALLICK2015_G_METHOD, MALLICK2015_MAX_ITERATIONS,
+    MALLICK2015_CONSTRAIN_NEGATIVE_LE, MALLICK2015_CONSTRAIN_PET,
+    MALLICK2015_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+    MALLICK2015_RUN_ITERATIVE_CONVERGENCE, MALLICK2015_USE_BUCK_DEWPOINT,
+    MALLICK2015_USE_VARIABLE_ALPHA, MALLICK2015_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+    MALLICK2016_G_METHOD, MALLICK2016_MAX_ITERATIONS,
+    MALLICK2016_CONSTRAIN_NEGATIVE_LE, MALLICK2016_CONSTRAIN_PET,
+    MALLICK2016_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+    MALLICK2016_RUN_ITERATIVE_CONVERGENCE, MALLICK2016_USE_BUCK_DEWPOINT,
+    MALLICK2016_USE_VARIABLE_ALPHA, MALLICK2016_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+)
 from .exceptions import MissingOfflineParameter
 from .closure import STIC_closure
 from .soil_moisture_initialization import initialize_soil_moisture
@@ -47,7 +62,12 @@ logger = logging.getLogger(__name__)
 def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str, bool, int, float]]:
     resolved_configuration = configuration or DEFAULT_CONFIGURATION
 
-    if resolved_configuration not in {"ECOv002", "ECOv003", MALLICK2014_CONFIGURATION}:
+    if resolved_configuration not in {
+        "ECOv002", "ECOv003",
+        MALLICK2014_CONFIGURATION,
+        MALLICK2015_CONFIGURATION,
+        MALLICK2016_CONFIGURATION,
+    }:
         logger.warning(
             "unsupported configuration '%s'; falling back to %s",
             resolved_configuration,
@@ -58,6 +78,7 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
     if resolved_configuration == "ECOv002":
         return {
             "configuration": resolved_configuration,
+            "closure_version": "2015",
             "LE_convergence_target": ECOv002_LE_CONVERGENCE_TARGET_WM2,
             "max_iterations": ECOv002_MAX_ITERATIONS,
             "g_method": ECOv002_G_METHOD,
@@ -73,6 +94,7 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
     if resolved_configuration == MALLICK2014_CONFIGURATION:
         return {
             "configuration": resolved_configuration,
+            "closure_version": "2014",
             "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
             "max_iterations": 0,
             "g_method": MALLICK2014_G_METHOD,
@@ -85,8 +107,41 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
             "constrain_LE_to_available_energy": MALLICK2014_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
         }
 
+    if resolved_configuration == MALLICK2015_CONFIGURATION:
+        return {
+            "configuration": resolved_configuration,
+            "closure_version": "2015",
+            "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
+            "max_iterations": MALLICK2015_MAX_ITERATIONS,
+            "g_method": MALLICK2015_G_METHOD,
+            "constrain_negative_LE": MALLICK2015_CONSTRAIN_NEGATIVE_LE,
+            "constrain_PET": MALLICK2015_CONSTRAIN_PET,
+            "apply_surface_emissivity_to_LWin": MALLICK2015_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+            "run_iterative_convergence": MALLICK2015_RUN_ITERATIVE_CONVERGENCE,
+            "use_buck_dewpoint": MALLICK2015_USE_BUCK_DEWPOINT,
+            "default_use_variable_alpha": MALLICK2015_USE_VARIABLE_ALPHA,
+            "constrain_LE_to_available_energy": MALLICK2015_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+        }
+
+    if resolved_configuration == MALLICK2016_CONFIGURATION:
+        return {
+            "configuration": resolved_configuration,
+            "closure_version": "2015",  # 2016 uses the same STIC1.2 closure as 2015
+            "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
+            "max_iterations": MALLICK2016_MAX_ITERATIONS,
+            "g_method": MALLICK2016_G_METHOD,
+            "constrain_negative_LE": MALLICK2016_CONSTRAIN_NEGATIVE_LE,
+            "constrain_PET": MALLICK2016_CONSTRAIN_PET,
+            "apply_surface_emissivity_to_LWin": MALLICK2016_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+            "run_iterative_convergence": MALLICK2016_RUN_ITERATIVE_CONVERGENCE,
+            "use_buck_dewpoint": MALLICK2016_USE_BUCK_DEWPOINT,
+            "default_use_variable_alpha": MALLICK2016_USE_VARIABLE_ALPHA,
+            "constrain_LE_to_available_energy": MALLICK2016_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+        }
+
     return {
         "configuration": resolved_configuration,
+        "closure_version": "2015",
         "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
         "max_iterations": MAX_ITERATIONS,
         "g_method": ECOv003_G_METHOD,
@@ -190,6 +245,7 @@ def STIC_JPL(
     run_iterative_convergence = bool(mode_defaults["run_iterative_convergence"])
     use_buck_dewpoint = bool(mode_defaults["use_buck_dewpoint"])
     constrain_LE_to_available_energy = bool(mode_defaults["constrain_LE_to_available_energy"])
+    use_2014_EF_closure = mode_defaults["closure_version"] == "2014"
 
     if use_variable_alpha is None:
         use_variable_alpha = bool(mode_defaults["default_use_variable_alpha"])
@@ -339,7 +395,8 @@ def STIC_JPL(
         gamma_hPa=gamma_hPa,
         rho_kgm3=rho_kgm3,
         Cp_Jkg=Cp_Jkg,
-        alpha=alpha
+        alpha=alpha,
+        EF_moisture_factor=0 if use_2014_EF_closure else SM,
     )
     
     gBB = gB_ms
@@ -492,7 +549,8 @@ def STIC_JPL(
             gamma_hPa=gamma_hPa,  # Psychrometric constant (hPa/°C)
             rho_kgm3=rho_kgm3,  # Air density (kg/m³)
             Cp_Jkg=Cp_Jkg,  # Specific heat capacity of air (J/kg/°C)
-            alpha=alpha  # Stability correction factor for conductance 
+            alpha=alpha,  # Stability correction factor for conductance
+            EF_moisture_factor=0 if use_2014_EF_closure else SM,
         )
 
         gB_by_gS = rt.where(gS_ms == 0, 0, gB_ms / gS_ms)
