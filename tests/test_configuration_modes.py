@@ -27,6 +27,7 @@ def test_resolve_mode_defaults_mallick2014():
     defaults = _resolve_mode_defaults("MALLICK2014")
 
     assert defaults["configuration"] == "MALLICK2014"
+    assert defaults["closure_version"] == "2014"
     assert defaults["g_method"] == "sebal"
     assert defaults["constrain_negative_LE"] is False
     assert defaults["constrain_PET"] is False
@@ -34,6 +35,38 @@ def test_resolve_mode_defaults_mallick2014():
     assert defaults["run_iterative_convergence"] is False
     assert defaults["use_buck_dewpoint"] is True
     assert defaults["default_use_variable_alpha"] is False
+    assert defaults["constrain_LE_to_available_energy"] is False
+
+
+def test_resolve_mode_defaults_mallick2015():
+    defaults = _resolve_mode_defaults("MALLICK2015")
+
+    assert defaults["configuration"] == "MALLICK2015"
+    assert defaults["closure_version"] == "2015"
+    assert defaults["g_method"] == "sebal"
+    assert defaults["max_iterations"] == 25
+    assert defaults["constrain_negative_LE"] is False
+    assert defaults["constrain_PET"] is False
+    assert defaults["apply_surface_emissivity_to_LWin"] is False
+    assert defaults["run_iterative_convergence"] is True
+    assert defaults["use_buck_dewpoint"] is True
+    assert defaults["default_use_variable_alpha"] is True
+    assert defaults["constrain_LE_to_available_energy"] is False
+
+
+def test_resolve_mode_defaults_mallick2016():
+    defaults = _resolve_mode_defaults("MALLICK2016")
+
+    assert defaults["configuration"] == "MALLICK2016"
+    assert defaults["closure_version"] == "2015"  # 2016 uses same STIC1.2 closure as 2015
+    assert defaults["g_method"] == "sebal"
+    assert defaults["max_iterations"] == 25
+    assert defaults["constrain_negative_LE"] is False
+    assert defaults["constrain_PET"] is False
+    assert defaults["apply_surface_emissivity_to_LWin"] is False
+    assert defaults["run_iterative_convergence"] is True
+    assert defaults["use_buck_dewpoint"] is True
+    assert defaults["default_use_variable_alpha"] is True
     assert defaults["constrain_LE_to_available_energy"] is False
 
 
