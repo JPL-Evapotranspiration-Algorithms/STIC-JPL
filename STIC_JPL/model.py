@@ -105,7 +105,12 @@ def _dewpoint_celsius_buck1981(
         RH: Union[Raster, np.ndarray],
         RH_floor: float = 1e-6
     ) -> Union[Raster, np.ndarray]:
-    """Compute dewpoint temperature in Celsius from air temperature and RH using Buck (1981)."""
+    """
+    Compute dewpoint temperature in Celsius from air temperature and RH using Buck (1981).
+
+    Source: Mallick et al. (2014), Eqs. (19)-(20), where Buck coefficients are
+    b=18.678, c=257.14, d=234.5.
+    """
     b = 18.678
     c = 257.14
     d = 234.5
@@ -400,6 +405,7 @@ def STIC_JPL(
             SM=SM,
             gB_by_gS=gB_by_gS
         )
+        # ET partitioning from STIC moisture-availability relation (Mallick et al., 2014, Eq. 18).
         LE_soil_Wm2 = rt.clip(SM * PET_PM_Wm2, 0, None)
         LE_canopy_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
         iteration = 0
@@ -491,7 +497,7 @@ def STIC_JPL(
 
         gB_by_gS = rt.where(gS_ms == 0, 0, gB_ms / gS_ms)
         T0_C = dT_C + Ta_C
-        # latent heat flux
+        # Latent heat flux from Penman-Monteith conductance form (Mallick et al., 2014, Eq. 1).
         LE_Wm2_new = ((delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + gB_by_gS)))
         if constrain_LE_to_available_energy:
             LE_Wm2_new = rt.where(LE_Wm2_new > phi_Wm2, phi_Wm2, LE_Wm2_new)
@@ -527,7 +533,7 @@ def STIC_JPL(
             gB_by_gS=gB_by_gS
         )
         
-        # ET PARTITIONING
+        # ET partitioning from STIC moisture-availability relation (Mallick et al., 2014, Eq. 18).
         LE_soil_Wm2 = rt.clip(SM * PET_PM_Wm2, 0, None)
         LE_canopy_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
         # change in latent heat flux estimate

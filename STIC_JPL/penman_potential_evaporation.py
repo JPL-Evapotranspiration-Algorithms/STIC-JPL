@@ -44,6 +44,9 @@ def penman_potential_evaporation(
         - Penman, H. L. (1948). Natural evaporation from open water, bare soil and grass.
             Proc. Royal Society A, 193, 120-145. https://doi.org/10.1098/rspa.1948.0037
         - Monteith, J. L. (1965). Evaporation and environment. Symp. Soc. Exp. Biol., 19, 205-234.
+        - Mallick, K. et al. (2014). A Surface Temperature Initiated Closure (STIC) for
+            surface energy balance fluxes. Remote Sensing of Environment, 141, 243-261.
+            Penman potential evaporation form shown in Eq. (11).
         - Mallick, K. et al. (2015). Reintroducing radiometric surface temperature into the Penman-Monteith
             formulation. Water Resources Research, 51, 6214-6243. https://doi.org/10.1002/2014WR016106
 

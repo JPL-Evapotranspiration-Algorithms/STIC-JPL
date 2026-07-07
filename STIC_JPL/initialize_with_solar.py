@@ -108,6 +108,7 @@ def initialize_with_solar(
     # get phi with new comp
     phi = Rn_Wm2 - G
 
+    # Vapor pressure at source from STIC moisture relation (Mallick et al., 2014, Eq. 2).
     Es = rt.where((Ep_PT > phi) & (dTS_C > 0) & (Td_C <= 0), Ea_hPa + SMrz * (Estar_hPa - Ea_hPa),
                     Ea_hPa + Ms * (Estar_hPa - Ea_hPa))
     

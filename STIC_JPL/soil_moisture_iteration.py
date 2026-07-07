@@ -34,6 +34,12 @@ def iterate_soil_moisture(
     information. However, this M will be treated as initial M, which will be later on estimated through iteration in the
     actual ET estimation loop to establish feedback between M and biophysical states.
 
+    Source equations:
+    - Mallick et al. (2014), Eq. (2): e_s = e_a + M (e_s* - e_a)
+    - Mallick et al. (2014), Eq. (5): moisture availability M from slope/temperature ratios
+    - Mallick et al. (2014), Eq. (8): surface dewpoint temperature T_sd
+    - Mallick et al. (2014), Eq. (12): Priestley-Taylor potential evaporation
+
     Args:
         delta (np.ndarray): Rate of change of saturation vapor pressure with temperature (kPa/°C).
         s1 (np.ndarray): The slope of saturation vapor pressure at surface temperature (hPa/K).
@@ -56,7 +62,7 @@ def iterate_soil_moisture(
     Returns:
         np.ndarray: Soil moisture availability (SM) (or wetness) (value 0 to 1).
     """
-    # calculate surface wetness (Msurf)
+    # Surface moisture availability M (Mallick et al., 2014, Eq. 5).
     kTSTD = (T0 - Td_C) / (ST_C - Td_C)
     Msurf = (s1 / s3) * ((Tsd_C - Td_C) / (kTSTD * (ST_C - Td_C)))  # Surface wetness
     Msurf = rt.where((Rn_Wm2 < 0) & (dTS_C < 0) & (Msurf < 0), np.abs(Msurf), Msurf)
@@ -78,7 +84,7 @@ def iterate_soil_moisture(
 
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)
 
-    # Potential evaporation (Priestley-Taylor eqn.)
+    # Potential evaporation from Priestley-Taylor (Mallick et al., 2014, Eq. 12).
     PET_PT_Wm2 = priestley_taylor_potential_evaporation(
         delta_hPa=delta_hPa,
         energy_Wm2=Rn_Wm2,
@@ -123,7 +129,7 @@ def iterate_soil_moisture(
 
     TdewIndex = (ST_C - Tsd_C) / (Ta_C - Td_C)
 
-    # Potential evaporation (Priestley-Taylor eqn.)
+    # Potential evaporation from Priestley-Taylor (Mallick et al., 2014, Eq. 12).
     PET_PT_Wm2 = priestley_taylor_potential_evaporation(
         delta_hPa=delta_hPa,
         energy_Wm2=Rn_Wm2,

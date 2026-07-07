@@ -23,6 +23,12 @@ def initialize_without_solar(
       """
       Initializes the variables related to moisture and vapor pressure without considering solar radiation.
 
+      Source equations:
+      - Mallick et al. (2014), Eq. (2): e_s = e_a + M (e_s* - e_a)
+      - Mallick et al. (2014), Eq. (5): moisture availability M from slope/temperature ratios
+      - Mallick et al. (2014), Eq. (8): surface dewpoint temperature T_sd
+      - Mallick et al. (2014), Eq. (12): Priestley-Taylor potential evaporation
+
       Parameters:
           ST_C (np.ndarray): Surface temperature in Celsius.
           Ta_C (np.ndarray): Air temperature in Celsius.
@@ -50,15 +56,14 @@ def initialize_without_solar(
       s33 = (45.03 + 3.014 * ST_C + 0.05345 * ST_C ** 2 + 0.00224 * ST_C ** 3) * 1e-2  # hpa/K
       s1 = (45.03 + 3.014 * Td_C + 0.05345 * Td_C ** 2 + 0.00224 * Td_C ** 3) * 1e-2  # hpa/K
       
-      # Surface dewpoint (Celsius)
+      # Surface dewpoint temperature from STIC derivation (Mallick et al., 2014, Eq. 8).
       Tsd_C = ((Estar_hPa - Ea_hPa) - (s33 * ST_C) + (s1 * Td_C)) / (s1 - s33)
       
       # slope of saturation vapor pressure and temperature
       s3 = rt.where((dTS > -20) & (dTS < 5), (Estar_hPa - Ea_hPa) / (ST_C - Td_C),
             (45.03 + 3.014 * ST_C + 0.05345 * ST_C ** 2 + 0.00224 * ST_C ** 3) * 1e-2)  # hpa/K
       
-      # Surface Moisture (Ms)
-      # Surface wetness
+      # Surface moisture availability M (Mallick et al., 2014, Eq. 5).
       Ms = (s1 / s3) * ((Tsd_C - Td_C) / (ST_C - Td_C))
       Ms = rt.clip(rt.where((dTS < 0) & (Ms < 0) & (phi_Wm2 < 0), np.abs(Ms), Ms), 0, 1)
 
@@ -78,6 +83,7 @@ def initialize_without_solar(
             alpha=alpha,
             gamma_hPa=gamma_hPa
       )
+      # Vapor pressure at the evaporating front using STIC mixing relation (Mallick et al., 2014, Eq. 2).
       Es = rt.where((Ep_PT > phi_Wm2) & (dTS > 0) & (Td_C <= 0), Ea_hPa + SMrz * (Estar_hPa - Ea_hPa),
             Ea_hPa + Ms * (Estar_hPa - Ea_hPa))
 

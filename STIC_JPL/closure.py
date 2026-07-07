@@ -20,8 +20,13 @@ def STIC_closure(
         alpha: float = PT_ALPHA  # Priestley-Taylor alpha
     ) -> Tuple[Union[Raster, np.ndarray]]:
     """
-    STIC closure equations with modified Priestley Taylor and Penman Monteith
-    (Mallick et al., 2015, Water Resources research)
+        STIC closure equations for conductances, aerodynamic temperature, and evaporative fraction.
+
+        Source equations
+        ----------------
+        - Mallick et al. (2014), Remote Sensing of Environment, 141, 243-261:
+            Eq. (14) gB, Eq. (15) gS, Eq. (16) dT, Eq. (17) Lambda/EF.
+        - See Appendix A in the same paper for derivation details.
 
     Parameters:
     delta (np.ndarray): Slope of the saturation vapor pressure-temperature curve (hPa/°C)
@@ -44,23 +49,23 @@ def STIC_closure(
 
     epsilon = 1e-8  # Small value to prevent division by zero
 
-    # boundary layer conductance (m s^-1)
+    # Boundary layer conductance from STIC closure (Mallick et al., 2014, Eq. 14).
     gB_den = (2 * Cp_Jkg * delta_hPa * Es_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Ea_hPa * rho_kgm3 - 2 * Cp_Jkg * Ea_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * Es_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * Estar_hPa * gamma_hPa * rho_kgm3 - Cp_Jkg * SM * Es_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Estar_hPa * gamma_hPa * rho_kgm3)
     gB = ((2 * phi_Wm2 * alpha * delta_hPa * gamma_hPa) / (gB_den + epsilon))
     gB = rt.clip(gB, 0.0001, 0.2)
 
-    # stomatal conductance (m s^-1)
+    # Surface/stomatal conductance from STIC closure (Mallick et al., 2014, Eq. 15).
     gS_den = (Cp_Jkg * Estar_hPa ** 2 * gamma_hPa * rho_kgm3 - Cp_Jkg * Es_hPa ** 2 * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Es_hPa ** 2 * rho_kgm3 + 2 * Cp_Jkg * delta_hPa * Ea_hPa * Es_hPa * rho_kgm3 - 2 * Cp_Jkg * delta_hPa * Ea_hPa * Estar_hPa * rho_kgm3 + 2 * Cp_Jkg * delta_hPa * Es_hPa * Estar_hPa * rho_kgm3 + 2 * Cp_Jkg * Ea_hPa * Es_hPa * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * Ea_hPa * Estar_hPa * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Es_hPa ** 2 * gamma_hPa * rho_kgm3 + Cp_Jkg * SM * Estar_hPa ** 2 * gamma_hPa * rho_kgm3 - 2 * Cp_Jkg * SM * Es_hPa * Estar_hPa * gamma_hPa * rho_kgm3)
     gS = (-(2 * (phi_Wm2 * alpha * delta_hPa * Ea_hPa * gamma_hPa - phi_Wm2 * alpha * delta_hPa * Es_hPa * gamma_hPa)) / (gS_den + epsilon))
     gS = rt.clip(gS, 0.0001, 0.2)
 
-    # difference between surface and air temperature (Celsius)
+    # Aerodynamic-source to air temperature difference (Mallick et al., 2014, Eq. 16).
     dT_num = (2 * delta_hPa * Es_hPa - 2 * delta_hPa * Ea_hPa - 2 * Ea_hPa * gamma_hPa + Es_hPa * gamma_hPa + Estar_hPa * gamma_hPa - SM * Es_hPa * gamma_hPa + SM * Estar_hPa * gamma_hPa + 2 * alpha * delta_hPa * Ea_hPa - 2 * alpha * delta_hPa * Es_hPa)
     dT_den = (2 * alpha * delta_hPa * gamma_hPa)
     dT = dT_num / (dT_den + epsilon)
     dT = rt.clip(dT, -10, 50)
 
-    # evaporative fraction
+    # Evaporative fraction (Lambda/EF) from STIC closure (Mallick et al., 2014, Eq. 17).
     EF_den = (2 * delta_hPa * Es_hPa - 2 * delta_hPa * Ea_hPa - 2 * Ea_hPa * gamma_hPa + Es_hPa * gamma_hPa + Estar_hPa * gamma_hPa - SM * Es_hPa * gamma_hPa + SM * Estar_hPa * gamma_hPa)
     EF = -(2 * alpha * delta_hPa * Ea_hPa - 2 * alpha * delta_hPa * Es_hPa) / (EF_den + epsilon)
     EF = rt.clip(EF, 0, 1)

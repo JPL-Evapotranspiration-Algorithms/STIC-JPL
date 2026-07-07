@@ -47,6 +47,9 @@ def penman_potential_transpiration(
       Proceedings of the Royal Society A, 193, 120-145. https://doi.org/10.1098/rspa.1948.0037
     - Monteith, J. L. (1965). Evaporation and environment.
       Symposia of the Society for Experimental Biology, 19, 205-234.
+    - Mallick, K. et al. (2014). A Surface Temperature Initiated Closure (STIC) for
+      surface energy balance fluxes. Remote Sensing of Environment, 141, 243-261.
+      Uses Penman-Monteith closure structure (Eq. 1) and ET partitioning context (Eq. 18).
     - Mallick, K. et al. (2015). Reintroducing radiometric surface temperature into the Penman-Monteith
       formulation. Water Resources Research, 51, 6214-6243. https://doi.org/10.1002/2014WR016106
 
