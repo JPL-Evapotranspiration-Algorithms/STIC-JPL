@@ -11,20 +11,21 @@ from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
 from shapely.geometry import Point
 
 from .constants import *
-from .model import STIC_JPL, MAX_ITERATIONS, USE_VARIABLE_ALPHA
+from .model import STIC_JPL, USE_VARIABLE_ALPHA
 
 logger = logging.getLogger(__name__)
 
 def process_STIC_table(
-        input_df: DataFrame, 
-        max_iterations = MAX_ITERATIONS, 
-        use_variable_alpha = USE_VARIABLE_ALPHA,
-        constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
-    constrain_PET = CONSTRAIN_PET,
-        supply_SWin = SUPPLY_SWIN,
-        upscale_to_daylight = UPSCALE_TO_DAYLIGHT,
+        input_df: DataFrame,
+        max_iterations=None,
+    use_variable_alpha=None,
+        constrain_negative_LE=None,
+        constrain_PET=None,
+        supply_SWin=SUPPLY_SWIN,
+        upscale_to_daylight=UPSCALE_TO_DAYLIGHT,
+        configuration: str = DEFAULT_CONFIGURATION,
         offline_mode: bool = False
-    ) -> DataFrame:
+) -> DataFrame:
     """
     Process STIC table with batch processing.
     
@@ -39,20 +40,22 @@ def process_STIC_table(
         constrain_PET=constrain_PET,
         supply_SWin=supply_SWin,
         upscale_to_daylight=upscale_to_daylight,
+        configuration=configuration,
         offline_mode=offline_mode
     )
 
 
 def process_STIC_table_single(
-        input_df: DataFrame, 
-        max_iterations = MAX_ITERATIONS, 
-        use_variable_alpha = USE_VARIABLE_ALPHA,
-        constrain_negative_LE = CONSTRAIN_NEGATIVE_LE,
-    constrain_PET = CONSTRAIN_PET,
-        supply_SWin = SUPPLY_SWIN,
-        upscale_to_daylight = UPSCALE_TO_DAYLIGHT,
+        input_df: DataFrame,
+        max_iterations=None,
+    use_variable_alpha=None,
+        constrain_negative_LE=None,
+        constrain_PET=None,
+        supply_SWin=SUPPLY_SWIN,
+        upscale_to_daylight=UPSCALE_TO_DAYLIGHT,
+        configuration: str = DEFAULT_CONFIGURATION,
         offline_mode: bool = False
-    ) -> DataFrame:
+) -> DataFrame:
     """Process a single row or batch of data through STIC-JPL model."""
     
     ST_C = np.float64(np.array(input_df.ST_C))
@@ -76,6 +79,9 @@ def process_STIC_table_single(
     
     if "SWin_Wm2" in input_df and supply_SWin:
         SWin_Wm2 = np.float64(np.array(input_df.SWin_Wm2))
+    elif configuration == "ECOv002" and "Rg" in input_df:
+        SWin_Wm2 = np.float64(np.array(input_df.Rg))
+        logger.info("ECOv002 mode: using Rg column as SWin_Wm2")
     else:
         SWin_Wm2 = None
 
@@ -145,6 +151,7 @@ def process_STIC_table_single(
         constrain_negative_LE=constrain_negative_LE,
         constrain_PET=constrain_PET,
         upscale_to_daylight=upscale_to_daylight,
+        configuration=configuration,
         offline_mode=offline_mode
     )
 

@@ -6,10 +6,36 @@ import rasters as rt
 from rasters import Raster
 
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
+from santanello_soil_heat_flux import santanello_soil_heat_flux as calculate_santanello_soil_heat_flux
 
 from .constants import *
 from .soil_moisture_initialization import initialize_soil_moisture
 from .net_longwave_radiation import calculate_net_longwave_radiation
+
+
+def _calculate_soil_heat_flux(
+        G_method: str,
+        ST_C: Union[Raster, np.ndarray],
+        NDVI: Union[Raster, np.ndarray],
+        albedo: Union[Raster, np.ndarray],
+        Rn_Wm2: Union[Raster, np.ndarray]
+    ) -> Union[Raster, np.ndarray]:
+    method = (G_method or "").lower().strip()
+
+    if method == "sebal":
+        return calculate_SEBAL_soil_heat_flux(
+            ST_C=ST_C,
+            NDVI=NDVI,
+            albedo=albedo,
+            Rn=Rn_Wm2,
+        )
+
+    if method == "santanello":
+        raise NotImplementedError(
+            "G_method='santanello' is not available before soil moisture initialization"
+        )
+
+    raise ValueError(f"unsupported soil heat flux method: {G_method}")
 
 
 def initialize_with_solar(
@@ -64,16 +90,25 @@ def initialize_with_solar(
     )
 
     # calculate soil heat flux
-    G = calculate_SEBAL_soil_heat_flux(
-        ST_C=ST_C,  # Surface temperature in Celsius
-        NDVI=NDVI,  # Normalized Difference Vegetation Index
-        albedo=albedo,  # Albedo of the surface
-        Rn=Rn_Wm2  # Net radiation (W/m^2)
-    )
+    if (G_method or "").lower().strip() == "santanello":
+        G = calculate_santanello_soil_heat_flux(
+            seconds_of_day=seconds_of_day,
+            Rn=Rn_Wm2,
+            SM=Ms,
+        )
+    else:
+        G = _calculate_soil_heat_flux(
+            G_method=G_method,
+            ST_C=ST_C,
+            NDVI=NDVI,
+            albedo=albedo,
+            Rn_Wm2=Rn_Wm2,
+        )
 
     # get phi with new comp
     phi = Rn_Wm2 - G
 
+    # Vapor pressure at source from STIC moisture relation (Mallick et al., 2014, Eq. 2).
     Es = rt.where((Ep_PT > phi) & (dTS_C > 0) & (Td_C <= 0), Ea_hPa + SMrz * (Estar_hPa - Ea_hPa),
                     Ea_hPa + Ms * (Estar_hPa - Ea_hPa))
     

@@ -27,6 +27,12 @@ def initialize_soil_moisture(
     This function estimates the soil moisture availability (SM) based on thermal IR and meteorological information. 
     The estimated SM is treated as initial SM, which will be later estimated through iteration in the actual ET estimation loop to establish feedback between SM and biophysical states.
 
+    Source equations:
+    - Mallick et al. (2014), Eq. (2): e_s = e_a + M (e_s* - e_a)
+    - Mallick et al. (2014), Eq. (5): moisture availability M from slope/temperature ratios
+    - Mallick et al. (2014), Eq. (8): surface dewpoint temperature T_sd
+    - Mallick et al. (2014), Eq. (12): Priestley-Taylor potential evaporation
+
     Parameters:
     delta (np.ndarray): Rate of change of saturation vapor pressure with temperature (kPa/°C)
     ST_C (np.ndarray): Surface temperature (°C)
@@ -51,18 +57,18 @@ def initialize_soil_moisture(
     s3 (np.ndarray): The slope of SVP at surface temperature (hPa/K)
     Tsd_C (np.ndarray): The surface dewpoint temperature (°C)
     """
-    # Compute the surface dewpoint temperature
+    # Compute Tsd from STIC slope linearization (Mallick et al., 2014, Eq. 8).
     s11 = (45.03 + 3.014 * Td_C + 0.05345 * Td_C ** 2 + 0.00224 * Td_C ** 3) * 1e-2  # slope of SVP at TD (hpa/K)
     s22 = (Estar_hPa - Ea_hPa) / (ST_C - Td_C)
     s33 = (45.03 + 3.014 * ST_C + 0.05345 * ST_C ** 2 + 0.00224 * ST_C ** 3) * 1e-2  # slope of SVP at TS (hpa/K)
     s44 = (SVP_hPa - Ea_hPa) / (Ta_C - Td_C)
     Tsd_C = (Estar_hPa - Ea_hPa - s33 * ST_C + s11 * Td_C) / (s11 - s33)  # Surface dewpoint temperature (degC)
 
-    # Calculate the surface moisture or wetness
+    # Surface moisture availability M (Mallick et al., 2014, Eq. 5).
     Msurf = (s11 / s22) * ((Tsd_C - Td_C) / (ST_C - Td_C))  # Surface wetness
     Msurf = rt.clip(Msurf, 0.0001, 0.9999)
 
-    # Calculate the surface vapor pressure and deficit
+    # Surface vapor pressure from STIC mixing relation (Mallick et al., 2014, Eq. 2).
     esurf = Ea_hPa + Msurf * (Estar_hPa - Ea_hPa)
     Dsurf = esurf - Ea_hPa
 
@@ -108,6 +114,7 @@ def initialize_soil_moisture(
     SM = rt.where((FVC <= 0.25) & (dTS > 0) & (Ta_C > 10) & (Td_C < 0) & (Dsurf > VPD_hPa), SMrz, SM)
     SM = rt.where((PET_PT_Wm2 < Rn_Wm2) & (FVC <= 0.25) & (Dsurf > VPD_hPa), SMrz, SM)
     
+    # Source vapor pressure from STIC mixing relation (Mallick et al., 2014, Eq. 2).
     es = Ea_hPa + SM * (Estar_hPa - Ea_hPa)
     
     # vapor pressure deficit at surface

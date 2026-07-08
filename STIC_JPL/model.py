@@ -1,4 +1,4 @@
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 import logging
 from datetime import datetime, timedelta
 from os.path import join, abspath, expanduser
@@ -25,6 +25,21 @@ from carlson_fractional_vegetation_cover import carlson_fractional_vegetation_co
 from carlson_leaf_area_index import carlson_leaf_area_index
 
 from .constants import *
+from .constants import (
+    MALLICK2014_CONFIGURATION,
+    MALLICK2015_CONFIGURATION,
+    MALLICK2016_CONFIGURATION,
+    MALLICK2015_G_METHOD, MALLICK2015_MAX_ITERATIONS,
+    MALLICK2015_CONSTRAIN_NEGATIVE_LE, MALLICK2015_CONSTRAIN_PET,
+    MALLICK2015_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+    MALLICK2015_RUN_ITERATIVE_CONVERGENCE, MALLICK2015_USE_BUCK_DEWPOINT,
+    MALLICK2015_USE_VARIABLE_ALPHA, MALLICK2015_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+    MALLICK2016_G_METHOD, MALLICK2016_MAX_ITERATIONS,
+    MALLICK2016_CONSTRAIN_NEGATIVE_LE, MALLICK2016_CONSTRAIN_PET,
+    MALLICK2016_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+    MALLICK2016_RUN_ITERATIVE_CONVERGENCE, MALLICK2016_USE_BUCK_DEWPOINT,
+    MALLICK2016_USE_VARIABLE_ALPHA, MALLICK2016_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+)
 from .exceptions import MissingOfflineParameter
 from .closure import STIC_closure
 from .soil_moisture_initialization import initialize_soil_moisture
@@ -37,13 +52,126 @@ from .iterate_without_solar import iterate_without_solar
 from .root_zone_initialization import calculate_root_zone_moisture
 from .penman_potential_evaporation import penman_potential_evaporation
 from .penman_potential_transpiration import penman_potential_transpiration
-from .FVC_from_NDVI import FVC_from_NDVI
-from .LAI_from_NDVI import LAI_from_NDVI
 from .celcius_to_kelvin import celcius_to_kelvin
 
 __author__ = 'Kaniska Mallick, Madeleine Pascolini-Campbell, Gregory Halverson'
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str, bool, int, float]]:
+    resolved_configuration = configuration or DEFAULT_CONFIGURATION
+
+    if resolved_configuration not in {
+        "ECOv002", "ECOv003",
+        MALLICK2014_CONFIGURATION,
+        MALLICK2015_CONFIGURATION,
+        MALLICK2016_CONFIGURATION,
+    }:
+        logger.warning(
+            "unsupported configuration '%s'; falling back to %s",
+            resolved_configuration,
+            DEFAULT_CONFIGURATION,
+        )
+        resolved_configuration = DEFAULT_CONFIGURATION
+
+    if resolved_configuration == "ECOv002":
+        return {
+            "configuration": resolved_configuration,
+            "closure_version": "2015",
+            "LE_convergence_target": ECOv002_LE_CONVERGENCE_TARGET_WM2,
+            "max_iterations": ECOv002_MAX_ITERATIONS,
+            "g_method": ECOv002_G_METHOD,
+            "constrain_negative_LE": ECOv002_CONSTRAIN_NEGATIVE_LE,
+            "constrain_PET": ECOv002_CONSTRAIN_PET,
+            "apply_surface_emissivity_to_LWin": ECOv002_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+            "run_iterative_convergence": True,
+            "use_buck_dewpoint": False,
+            "default_use_variable_alpha": USE_VARIABLE_ALPHA,
+            "constrain_LE_to_available_energy": True,
+        }
+
+    if resolved_configuration == MALLICK2014_CONFIGURATION:
+        return {
+            "configuration": resolved_configuration,
+            "closure_version": "2014",
+            "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
+            "max_iterations": 0,
+            "g_method": MALLICK2014_G_METHOD,
+            "constrain_negative_LE": MALLICK2014_CONSTRAIN_NEGATIVE_LE,
+            "constrain_PET": MALLICK2014_CONSTRAIN_PET,
+            "apply_surface_emissivity_to_LWin": MALLICK2014_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+            "run_iterative_convergence": MALLICK2014_RUN_ITERATIVE_CONVERGENCE,
+            "use_buck_dewpoint": MALLICK2014_USE_BUCK_DEWPOINT,
+            "default_use_variable_alpha": MALLICK2014_USE_VARIABLE_ALPHA,
+            "constrain_LE_to_available_energy": MALLICK2014_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+        }
+
+    if resolved_configuration == MALLICK2015_CONFIGURATION:
+        return {
+            "configuration": resolved_configuration,
+            "closure_version": "2015",
+            "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
+            "max_iterations": MALLICK2015_MAX_ITERATIONS,
+            "g_method": MALLICK2015_G_METHOD,
+            "constrain_negative_LE": MALLICK2015_CONSTRAIN_NEGATIVE_LE,
+            "constrain_PET": MALLICK2015_CONSTRAIN_PET,
+            "apply_surface_emissivity_to_LWin": MALLICK2015_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+            "run_iterative_convergence": MALLICK2015_RUN_ITERATIVE_CONVERGENCE,
+            "use_buck_dewpoint": MALLICK2015_USE_BUCK_DEWPOINT,
+            "default_use_variable_alpha": MALLICK2015_USE_VARIABLE_ALPHA,
+            "constrain_LE_to_available_energy": MALLICK2015_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+        }
+
+    if resolved_configuration == MALLICK2016_CONFIGURATION:
+        return {
+            "configuration": resolved_configuration,
+            "closure_version": "2015",  # 2016 uses the same STIC1.2 closure as 2015
+            "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
+            "max_iterations": MALLICK2016_MAX_ITERATIONS,
+            "g_method": MALLICK2016_G_METHOD,
+            "constrain_negative_LE": MALLICK2016_CONSTRAIN_NEGATIVE_LE,
+            "constrain_PET": MALLICK2016_CONSTRAIN_PET,
+            "apply_surface_emissivity_to_LWin": MALLICK2016_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+            "run_iterative_convergence": MALLICK2016_RUN_ITERATIVE_CONVERGENCE,
+            "use_buck_dewpoint": MALLICK2016_USE_BUCK_DEWPOINT,
+            "default_use_variable_alpha": MALLICK2016_USE_VARIABLE_ALPHA,
+            "constrain_LE_to_available_energy": MALLICK2016_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+        }
+
+    return {
+        "configuration": resolved_configuration,
+        "closure_version": "2015",
+        "LE_convergence_target": LE_CONVERGENCE_TARGET_WM2,
+        "max_iterations": MAX_ITERATIONS,
+        "g_method": ECOv003_G_METHOD,
+        "constrain_negative_LE": ECOv003_CONSTRAIN_NEGATIVE_LE,
+        "constrain_PET": ECOv003_CONSTRAIN_PET,
+        "apply_surface_emissivity_to_LWin": ECOv003_APPLY_SURFACE_EMISSIVITY_TO_LWIN,
+        "run_iterative_convergence": True,
+        "use_buck_dewpoint": False,
+        "default_use_variable_alpha": USE_VARIABLE_ALPHA,
+        "constrain_LE_to_available_energy": True,
+    }
+
+
+def _dewpoint_celsius_buck1981(
+        Ta_C: Union[Raster, np.ndarray],
+        RH: Union[Raster, np.ndarray],
+        RH_floor: float = 1e-6
+    ) -> Union[Raster, np.ndarray]:
+    """
+    Compute dewpoint temperature in Celsius from air temperature and RH using Buck (1981).
+
+    Source: Mallick et al. (2014), Eqs. (19)-(20), where Buck coefficients are
+    b=18.678, c=257.14, d=234.5.
+    """
+    b = 18.678
+    c = 257.14
+    d = 234.5
+    RH_safe = rt.clip(RH, RH_floor, 1.0)
+    gamma_M = np.log(RH_safe * np.exp((b - (Ta_C / d)) * (Ta_C / (c + Ta_C))))
+    return (c * gamma_M) / (b - gamma_M)
 
 def STIC_JPL(
         ST_C: Union[Raster, np.ndarray],
@@ -59,7 +187,7 @@ def STIC_JPL(
         Ta_C: Union[Raster, np.ndarray] = None,
         RH: Union[Raster, np.ndarray] = None,
         G_Wm2: Union[Raster, np.ndarray] = None,
-        G_method: str = DEFAULT_G_METHOD,
+        G_method: Optional[str] = None,
         SM: Union[Raster, np.ndarray] = None,
         SWin_Wm2: Union[Raster, np.ndarray] = None,
         FVC: Union[Raster, np.ndarray] = None,
@@ -70,14 +198,16 @@ def STIC_JPL(
         rho_kgm3: Union[Raster, np.ndarray] = RHO_KGM3,
         Cp_Jkg: Union[Raster, np.ndarray] = CP_JKG,
         alpha: float = PT_ALPHA,
-        LE_convergence_target: float = LE_CONVERGENCE_TARGET_WM2,
-        max_iterations: int = MAX_ITERATIONS,
+        LE_convergence_target: float = None,
+        max_iterations: int = None,
         show_distributions: bool = SHOW_DISTRIBUTIONS,
-        use_variable_alpha: bool = USE_VARIABLE_ALPHA,
+        use_variable_alpha: Optional[bool] = None,
         upscale_to_daylight: bool = UPSCALE_TO_DAYLIGHT,
-        constrain_negative_LE: bool = CONSTRAIN_NEGATIVE_LE,
-        constrain_PET: bool = CONSTRAIN_PET,
+        constrain_negative_LE: Optional[bool] = None,
+        constrain_PET: Optional[bool] = None,
         resampling: str = RESAMPLING,
+        configuration: str = DEFAULT_CONFIGURATION,
+        apply_surface_emissivity_to_LWin: Optional[bool] = None,
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
@@ -85,6 +215,40 @@ def STIC_JPL(
     EF = None
     LE_daylight_Wm2 = None
     ET_daily_kg = None
+
+    mode_defaults = _resolve_mode_defaults(configuration)
+    configuration = mode_defaults["configuration"]
+
+    if LE_convergence_target is None:
+        LE_convergence_target = mode_defaults["LE_convergence_target"]
+
+    if max_iterations is None:
+        max_iterations = mode_defaults["max_iterations"]
+
+    if G_method is None:
+        G_method = mode_defaults["g_method"]
+
+    G_method = G_method.lower().strip()
+
+    if G_method not in {"sebal", "santanello"}:
+        raise ValueError(f"unsupported soil heat flux method: {G_method}")
+
+    if constrain_negative_LE is None:
+        constrain_negative_LE = mode_defaults["constrain_negative_LE"]
+
+    if constrain_PET is None:
+        constrain_PET = mode_defaults["constrain_PET"]
+
+    if apply_surface_emissivity_to_LWin is None:
+        apply_surface_emissivity_to_LWin = mode_defaults["apply_surface_emissivity_to_LWin"]
+
+    run_iterative_convergence = bool(mode_defaults["run_iterative_convergence"])
+    use_buck_dewpoint = bool(mode_defaults["use_buck_dewpoint"])
+    constrain_LE_to_available_energy = bool(mode_defaults["constrain_LE_to_available_energy"])
+    use_2014_EF_closure = mode_defaults["closure_version"] == "2014"
+
+    if use_variable_alpha is None:
+        use_variable_alpha = bool(mode_defaults["default_use_variable_alpha"])
 
     if geometry is None and isinstance(ST_C, Raster):
         geometry = ST_C.geometry
@@ -148,8 +312,11 @@ def STIC_JPL(
     # vapor pressure deficit (hPa)
     VPD_hPa = SVP_hPa - Ea_hPa
 
-    # swapping in the dew-point calculation from PT-JPL
-    Td_C = Ta_C - ((100 - RH * 100) / 5.0)
+    # Dewpoint calculation is mode-dependent to preserve ECO behavior and support strict MALLICK2014 mode.
+    if use_buck_dewpoint:
+        Td_C = _dewpoint_celsius_buck1981(Ta_C=Ta_C, RH=RH)
+    else:
+        Td_C = Ta_C - ((100 - RH * 100) / 5.0)
 
     # difference between surface and air temperature (Celsius)
     dTS_C = ST_C - Ta_C
@@ -157,11 +324,17 @@ def STIC_JPL(
     # saturation vapor pressure at surface temperature (hPa/K)
     Estar_hPa = 6.13753 * np.exp((17.27 * ST_C) / (ST_C + 237.3))
 
+    if configuration == "ECOv002" and SWin_Wm2 is None:
+        logger.warning("ECOv002 mode requested without SWin_Wm2; using no-SWin pathway")
+
     if SWin_Wm2 is None:
         # if G is None and SM is None:
         #     raise ValueError("soil heat flux or soil moisture prior required if solar radiation is not given")
 
         if G_Wm2 is None:
+            if G_method == "santanello":
+                logger.warning("santanello G method requested without SWin_Wm2; falling back to SEBAL G for no-SWin pathway")
+
             G_Wm2 = calculate_SEBAL_soil_heat_flux(
                 ST_C=ST_C,
                 NDVI=NDVI,
@@ -205,7 +378,8 @@ def STIC_JPL(
             LAI = LAI,  # leaf area index
             albedo = albedo,  # albedo of the surface
             gamma_hPa=gamma_hPa,  # psychrometric constant (hPa/°C)
-            G_method = DEFAULT_G_METHOD,  # method for calculating soil heat flux
+            G_method = G_method,  # method for calculating soil heat flux
+            apply_surface_emissivity_to_LWin=apply_surface_emissivity_to_LWin,
         )
     
     check_distribution(Ms, "Ms")
@@ -221,7 +395,8 @@ def STIC_JPL(
         gamma_hPa=gamma_hPa,
         rho_kgm3=rho_kgm3,
         Cp_Jkg=Cp_Jkg,
-        alpha=alpha
+        alpha=alpha,
+        EF_moisture_factor=0 if use_2014_EF_closure else SM,
     )
     
     gBB = gB_ms
@@ -257,18 +432,46 @@ def STIC_JPL(
     # sensible heat flux
     H_Wm2 = ((gamma_hPa * phi_Wm2 * (1 + gB_by_gS) - rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + (gB_by_gS))))
     
-    LE_Wm2_new = LE_init
-    LE_Wm2_change = LE_convergence_target
-    LE_Wm2_old = LE_Wm2_new
-    LE_canopy_Wm2 = None
-    potential_transpiration_Wm2 = None
-    iteration = 1
-    LE_Wm2_max_change = 0
+    if run_iterative_convergence:
+        LE_Wm2_new = LE_init
+        LE_Wm2_change = LE_convergence_target
+        LE_Wm2_old = LE_Wm2_new
+        LE_canopy_Wm2 = None
+        potential_transpiration_Wm2 = None
+        iteration = 1
+        LE_Wm2_max_change = 0
+    else:
+        LE_Wm2_new = LE_init
+
+        if constrain_LE_to_available_energy:
+            LE_Wm2_new = rt.where(LE_Wm2_new > phi_Wm2, phi_Wm2, LE_Wm2_new)
+
+        if constrain_negative_LE:
+            LE_Wm2_new = rt.where(LE_Wm2_new < 0, 0, LE_Wm2_new)
+
+        LE_Wm2_old = LE_Wm2_new
+        LE_Wm2_change = np.abs(LE_Wm2_old - LE_Wm2_new)
+        potential_transpiration_Wm2 = penman_potential_transpiration(
+            delta_hPa=delta_hPa,
+            phi_Wm2=phi_Wm2,
+            rho_kgm3=rho_kgm3,
+            Cp_Jkg=Cp_Jkg,
+            gB_ms=gB_ms,
+            VPD_hPa=VPD_hPa,
+            gamma_hPa=gamma_hPa,
+            SM=SM,
+            gB_by_gS=gB_by_gS
+        )
+        # ET partitioning from STIC moisture-availability relation (Mallick et al., 2014, Eq. 18).
+        LE_soil_Wm2 = rt.clip(SM * PET_PM_Wm2, 0, None)
+        LE_canopy_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
+        iteration = 0
+        LE_Wm2_max_change = 0
 
     t = TicToc()
     t.tic()
 
-    while (np.nanmax(LE_Wm2_change) >= LE_convergence_target and iteration <= max_iterations):
+    while run_iterative_convergence and (np.nanmax(LE_Wm2_change) >= LE_convergence_target and iteration <= max_iterations):
         logger.info(f"running STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)}")
 
         if SWin_Wm2 is None:
@@ -328,7 +531,7 @@ def STIC_JPL(
                 gamma_hPa = gamma_hPa,  # Psychrometric constant (hPa/°C)
                 rho_kgm3 = rho_kgm3,  # Air density (kg/m^3)
                 Cp_Jkg = Cp_Jkg,  # Specific heat at constant pressure (J/kg/K)
-                G_method = "santanello"  # Method for calculating soil heat flux
+                G_method = G_method  # Method for calculating soil heat flux
             )
 
         if use_variable_alpha:
@@ -346,14 +549,16 @@ def STIC_JPL(
             gamma_hPa=gamma_hPa,  # Psychrometric constant (hPa/°C)
             rho_kgm3=rho_kgm3,  # Air density (kg/m³)
             Cp_Jkg=Cp_Jkg,  # Specific heat capacity of air (J/kg/°C)
-            alpha=alpha  # Stability correction factor for conductance 
+            alpha=alpha,  # Stability correction factor for conductance
+            EF_moisture_factor=0 if use_2014_EF_closure else SM,
         )
 
         gB_by_gS = rt.where(gS_ms == 0, 0, gB_ms / gS_ms)
         T0_C = dT_C + Ta_C
-        # latent heat flux
+        # Latent heat flux from Penman-Monteith conductance form (Mallick et al., 2014, Eq. 1).
         LE_Wm2_new = ((delta_hPa * phi_Wm2 + rho_kgm3 * Cp_Jkg * gB_ms * VPD_hPa) / (delta_hPa + gamma_hPa * (1 + gB_by_gS)))
-        LE_Wm2_new = rt.where(LE_Wm2_new > phi_Wm2, phi_Wm2, LE_Wm2_new)
+        if constrain_LE_to_available_energy:
+            LE_Wm2_new = rt.where(LE_Wm2_new > phi_Wm2, phi_Wm2, LE_Wm2_new)
 
         if constrain_negative_LE:
             LE_Wm2_new = rt.where(LE_Wm2_new < 0, 0, LE_Wm2_new)
@@ -386,7 +591,7 @@ def STIC_JPL(
             gB_by_gS=gB_by_gS
         )
         
-        # ET PARTITIONING
+        # ET partitioning from STIC moisture-availability relation (Mallick et al., 2014, Eq. 18).
         LE_soil_Wm2 = rt.clip(SM * PET_PM_Wm2, 0, None)
         LE_canopy_Wm2 = rt.clip(LE_Wm2_new - LE_soil_Wm2, 0, None)
         # change in latent heat flux estimate
@@ -407,7 +612,8 @@ def STIC_JPL(
 
         iteration += 1
 
-    iteration -= 1
+    if run_iterative_convergence:
+        iteration -= 1
     results["LE_max_change"] = LE_Wm2_max_change
     results["iteration"] = iteration
 
