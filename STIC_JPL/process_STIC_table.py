@@ -24,6 +24,8 @@ def process_STIC_table(
         supply_SWin=SUPPLY_SWIN,
         upscale_to_daylight=UPSCALE_TO_DAYLIGHT,
         configuration: str = DEFAULT_CONFIGURATION,
+    G_method: str = None,
+    update_aerodynamic_states: bool = False,
         offline_mode: bool = False
 ) -> DataFrame:
     """0
@@ -41,6 +43,8 @@ def process_STIC_table(
         supply_SWin=supply_SWin,
         upscale_to_daylight=upscale_to_daylight,
         configuration=configuration,
+        G_method=G_method,
+        update_aerodynamic_states=update_aerodynamic_states,
         offline_mode=offline_mode
     )
 
@@ -54,6 +58,8 @@ def process_STIC_table_single(
         supply_SWin=SUPPLY_SWIN,
         upscale_to_daylight=UPSCALE_TO_DAYLIGHT,
         configuration: str = DEFAULT_CONFIGURATION,
+    G_method: str = None,
+    update_aerodynamic_states: bool = False,
         offline_mode: bool = False
 ) -> DataFrame:
     """Process a single row or batch of data through STIC-JPL model."""
@@ -152,6 +158,8 @@ def process_STIC_table_single(
         constrain_PET=constrain_PET,
         upscale_to_daylight=upscale_to_daylight,
         configuration=configuration,
+        G_method=G_method,
+        update_aerodynamic_states=update_aerodynamic_states,
         offline_mode=offline_mode
     )
 

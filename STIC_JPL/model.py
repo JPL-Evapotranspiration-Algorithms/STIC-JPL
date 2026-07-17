@@ -208,6 +208,7 @@ def STIC_JPL(
         resampling: str = RESAMPLING,
         configuration: str = DEFAULT_CONFIGURATION,
         apply_surface_emissivity_to_LWin: Optional[bool] = None,
+        update_aerodynamic_states: bool = False,
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
@@ -533,6 +534,12 @@ def STIC_JPL(
                 Cp_Jkg = Cp_Jkg,  # Specific heat at constant pressure (J/kg/K)
                 G_method = G_method  # Method for calculating soil heat flux
             )
+
+            if update_aerodynamic_states:
+                # Optional PR behavior: refresh aerodynamic state variables each solar iteration.
+                Es_hPa = e0
+                Estar_hPa = e0star
+                phi_Wm2 = Rn_Wm2 - G_Wm2
 
         if use_variable_alpha:
             alpha = alphaN
