@@ -60,6 +60,14 @@ def initialize_with_solar(
         G_method: str = DEFAULT_G_METHOD,  # method for calculating soil heat flux
         apply_surface_emissivity_to_LWin: bool = False  # whether to apply surface emissivity to incoming longwave radiation
     ) -> Tuple[Union[Raster, np.ndarray]]:
+
+    VALID_G_METHODS = {"santanello", "sebal"}
+
+    if G_method.lower() not in VALID_G_METHODS:
+        raise ValueError(
+            f"invalid G_method '{G_method}': must be one of {sorted(VALID_G_METHODS)}"
+        )
+
     # Rn SOIL
     kRN = 0.6
     Rn_soil = Rn_Wm2 * np.exp(-kRN * LAI)
@@ -90,11 +98,11 @@ def initialize_with_solar(
     )
 
     # calculate soil heat flux
-    if (G_method or "").lower().strip() == "santanello":
+    if G_method.lower() == "santanello":
         G = calculate_santanello_soil_heat_flux(
             seconds_of_day=seconds_of_day,
             Rn=Rn_Wm2,
-            SM=Ms,
+            SM=SM,
         )
     else:
         G = _calculate_soil_heat_flux(

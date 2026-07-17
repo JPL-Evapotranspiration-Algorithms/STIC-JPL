@@ -18,14 +18,14 @@ logger = logging.getLogger(__name__)
 def process_STIC_table(
         input_df: DataFrame,
         max_iterations=None,
-    use_variable_alpha=None,
+        use_variable_alpha=None,
         constrain_negative_LE=None,
         constrain_PET=None,
         supply_SWin=SUPPLY_SWIN,
         upscale_to_daylight=UPSCALE_TO_DAYLIGHT,
         configuration: str = DEFAULT_CONFIGURATION,
-    G_method: str = None,
-    update_aerodynamic_states: bool = False,
+        G_method: str = None,
+        update_aerodynamic_states: bool = False,
         offline_mode: bool = False
 ) -> DataFrame:
     """0
