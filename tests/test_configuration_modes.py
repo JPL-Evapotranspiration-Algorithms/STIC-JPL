@@ -115,6 +115,78 @@ def test_process_stic_table_forwards_configuration(monkeypatch):
     assert "LE_Wm2" in output_df.columns
 
 
+def test_process_stic_table_forwards_g_method(monkeypatch):
+    call_kwargs = {}
+    process_module = importlib.import_module("STIC_JPL.process_STIC_table")
+
+    def fake_stic_jpl(**kwargs):
+        call_kwargs.update(kwargs)
+        return {"LE_Wm2": np.array([1.0])}
+
+    monkeypatch.setattr(process_module, "STIC_JPL", fake_stic_jpl)
+
+    input_df = pd.DataFrame(
+        {
+            "ST_C": [30.0],
+            "EmisWB": [0.97],
+            "NDVI": [0.7],
+            "albedo": [0.2],
+            "Ta_C": [25.0],
+            "RH": [0.5],
+            "Rn_Wm2": [450.0],
+            "Rg": [900.0],
+            "G": [80.0],
+            "lat": [34.0],
+            "lon": [-118.0],
+            "time_UTC": [pd.Timestamp("2023-06-15T19:00:00")],
+        }
+    )
+
+    process_STIC_table(
+        input_df=input_df,
+        G_method="sebal",
+        offline_mode=True,
+    )
+
+    assert call_kwargs["G_method"] == "sebal"
+
+
+def test_process_stic_table_forwards_aerodynamic_update_toggle(monkeypatch):
+    call_kwargs = {}
+    process_module = importlib.import_module("STIC_JPL.process_STIC_table")
+
+    def fake_stic_jpl(**kwargs):
+        call_kwargs.update(kwargs)
+        return {"LE_Wm2": np.array([1.0])}
+
+    monkeypatch.setattr(process_module, "STIC_JPL", fake_stic_jpl)
+
+    input_df = pd.DataFrame(
+        {
+            "ST_C": [30.0],
+            "EmisWB": [0.97],
+            "NDVI": [0.7],
+            "albedo": [0.2],
+            "Ta_C": [25.0],
+            "RH": [0.5],
+            "Rn_Wm2": [450.0],
+            "Rg": [900.0],
+            "G": [80.0],
+            "lat": [34.0],
+            "lon": [-118.0],
+            "time_UTC": [pd.Timestamp("2023-06-15T19:00:00")],
+        }
+    )
+
+    process_STIC_table(
+        input_df=input_df,
+        update_aerodynamic_states=True,
+        offline_mode=True,
+    )
+
+    assert call_kwargs["update_aerodynamic_states"] is True
+
+
 def test_process_stic_table_ecov002_maps_rg_to_swin(monkeypatch):
     call_kwargs = {}
     process_module = importlib.import_module("STIC_JPL.process_STIC_table")

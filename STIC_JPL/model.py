@@ -208,6 +208,7 @@ def STIC_JPL(
         resampling: str = RESAMPLING,
         configuration: str = DEFAULT_CONFIGURATION,
         apply_surface_emissivity_to_LWin: Optional[bool] = None,
+        update_aerodynamic_states: bool = False,
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
@@ -475,6 +476,7 @@ def STIC_JPL(
         logger.info(f"running STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)}")
 
         if SWin_Wm2 is None:
+            logger.info("iterating without solar")
             SM, SMrz, Ms, s1, e0, e0star, Tsd_C, D0, alphaN = iterate_without_solar(
                 LE = LE_Wm2_new,  # Latent heat flux (W/m^2)
                 PET = PET_PM_Wm2,  # Potential evapotranspiration (W/m^2)
@@ -501,6 +503,7 @@ def STIC_JPL(
                 Cp_Jkg = Cp_Jkg  # Specific heat at constant pressure (J/kg/K)
             )
         else:
+            logger.info("iterating with solar")
             SM, G_Wm2, e0, e0star, D0, alphaN = iterate_with_solar(
                 seconds_of_day = seconds_of_day,  # Seconds of the day
                 ST_C = ST_C,  # Soil temperature (°C)
@@ -533,6 +536,12 @@ def STIC_JPL(
                 Cp_Jkg = Cp_Jkg,  # Specific heat at constant pressure (J/kg/K)
                 G_method = G_method  # Method for calculating soil heat flux
             )
+
+            if update_aerodynamic_states:
+                # Optional PR behavior: refresh aerodynamic state variables each solar iteration.
+                Es_hPa = e0
+                Estar_hPa = e0star
+                phi_Wm2 = Rn_Wm2 - G_Wm2
 
         if use_variable_alpha:
             alpha = alphaN
@@ -602,7 +611,7 @@ def STIC_JPL(
         
         logger.info(
             f"completed STIC iteration {cl.val(iteration)} / {cl.val(max_iterations)} with max LE change: {cl.val(np.round(LE_Wm2_max_change, 3))} ({t.tocvalue()} seconds)")
-        
+
         check_distribution(SM, f"SM_{iteration}")
         check_distribution(G_Wm2, f"G_{iteration}")
         check_distribution(LE_Wm2_new, f"LE_{iteration}")

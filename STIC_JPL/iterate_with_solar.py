@@ -6,7 +6,6 @@ import rasters as rt
 from rasters import Raster
 
 from SEBAL_soil_heat_flux import calculate_SEBAL_soil_heat_flux
-
 from .constants import *
 from .canopy_air_stream import calculate_canopy_air_stream_vapor_pressure
 from .soil_moisture_iteration import iterate_soil_moisture
@@ -113,6 +112,14 @@ def iterate_with_solar(
     SM (np.ndarray): Soil moisture
     G (np.ndarray): Soil heat flux
     """
+
+    VALID_G_METHODS = {"santanello", "sebal"}
+
+    if G_method.lower() not in VALID_G_METHODS:
+        raise ValueError(
+            f"invalid G_method '{G_method}': must be one of {sorted(VALID_G_METHODS)}"
+        )
+    
     # canopy air stream vapor pressures
     e0star = calculate_canopy_air_stream_vapor_pressure(
         LE=LE_Wm2,
@@ -152,8 +159,7 @@ def iterate_with_solar(
         gamma_hPa=gamma_hPa
     )
 
-    # calculate soil heat flux
-    if (G_method or "").lower().strip() == "santanello":
+    if G_method.lower() == "santanello":
         G = calculate_santanello_soil_heat_flux(
             seconds_of_day=seconds_of_day,
             Rn=Rn_Wm2,
