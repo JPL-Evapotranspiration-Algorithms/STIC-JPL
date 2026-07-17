@@ -26,7 +26,7 @@ def process_STIC_table(
         configuration: str = DEFAULT_CONFIGURATION,
         offline_mode: bool = False
 ) -> DataFrame:
-    """
+    """0
     Process STIC table with batch processing.
     
     Note: daylight_evapotranspiration now supports arrays of datetime objects,
@@ -48,7 +48,7 @@ def process_STIC_table(
 def process_STIC_table_single(
         input_df: DataFrame,
         max_iterations=None,
-    use_variable_alpha=None,
+        use_variable_alpha=None,
         constrain_negative_LE=None,
         constrain_PET=None,
         supply_SWin=SUPPLY_SWIN,
