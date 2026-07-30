@@ -89,6 +89,7 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
             "use_buck_dewpoint": False,
             "default_use_variable_alpha": USE_VARIABLE_ALPHA,
             "constrain_LE_to_available_energy": True,
+            "update_aerodynamic_states": True,  # Consistent with historical Collection 2 STIC implementation
         }
 
     if resolved_configuration == MALLICK2014_CONFIGURATION:
@@ -105,6 +106,7 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
             "use_buck_dewpoint": MALLICK2014_USE_BUCK_DEWPOINT,
             "default_use_variable_alpha": MALLICK2014_USE_VARIABLE_ALPHA,
             "constrain_LE_to_available_energy": MALLICK2014_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+            "update_aerodynamic_states": True,
         }
 
     if resolved_configuration == MALLICK2015_CONFIGURATION:
@@ -121,6 +123,7 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
             "use_buck_dewpoint": MALLICK2015_USE_BUCK_DEWPOINT,
             "default_use_variable_alpha": MALLICK2015_USE_VARIABLE_ALPHA,
             "constrain_LE_to_available_energy": MALLICK2015_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+            "update_aerodynamic_states": True,
         }
 
     if resolved_configuration == MALLICK2016_CONFIGURATION:
@@ -137,6 +140,7 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
             "use_buck_dewpoint": MALLICK2016_USE_BUCK_DEWPOINT,
             "default_use_variable_alpha": MALLICK2016_USE_VARIABLE_ALPHA,
             "constrain_LE_to_available_energy": MALLICK2016_CONSTRAIN_LE_TO_AVAILABLE_ENERGY,
+            "update_aerodynamic_states": True,
         }
 
     return {
@@ -152,6 +156,7 @@ def _resolve_mode_defaults(configuration: Optional[str]) -> Dict[str, Union[str,
         "use_buck_dewpoint": False,
         "default_use_variable_alpha": USE_VARIABLE_ALPHA,
         "constrain_LE_to_available_energy": True,
+        "update_aerodynamic_states": False,
     }
 
 
@@ -172,6 +177,7 @@ def _dewpoint_celsius_buck1981(
     RH_safe = rt.clip(RH, RH_floor, 1.0)
     gamma_M = np.log(RH_safe * np.exp((b - (Ta_C / d)) * (Ta_C / (c + Ta_C))))
     return (c * gamma_M) / (b - gamma_M)
+
 
 def STIC_JPL(
         ST_C: Union[Raster, np.ndarray],
@@ -208,7 +214,7 @@ def STIC_JPL(
         resampling: str = RESAMPLING,
         configuration: str = DEFAULT_CONFIGURATION,
         apply_surface_emissivity_to_LWin: Optional[bool] = None,
-        update_aerodynamic_states: bool = False,
+        update_aerodynamic_states: Optional[bool] = None,
         offline_mode: bool = False) -> Dict[str, Union[Raster, np.ndarray]]:
     results = {}
     # For daily upscaling
@@ -242,6 +248,9 @@ def STIC_JPL(
 
     if apply_surface_emissivity_to_LWin is None:
         apply_surface_emissivity_to_LWin = mode_defaults["apply_surface_emissivity_to_LWin"]
+
+    if update_aerodynamic_states is None:
+        update_aerodynamic_states = bool(mode_defaults.get("update_aerodynamic_states", False))
 
     run_iterative_convergence = bool(mode_defaults["run_iterative_convergence"])
     use_buck_dewpoint = bool(mode_defaults["use_buck_dewpoint"])
@@ -329,9 +338,6 @@ def STIC_JPL(
         logger.warning("ECOv002 mode requested without SWin_Wm2; using no-SWin pathway")
 
     if SWin_Wm2 is None:
-        # if G is None and SM is None:
-        #     raise ValueError("soil heat flux or soil moisture prior required if solar radiation is not given")
-
         if G_Wm2 is None:
             if G_method == "santanello":
                 logger.warning("santanello G method requested without SWin_Wm2; falling back to SEBAL G for no-SWin pathway")
@@ -537,11 +543,11 @@ def STIC_JPL(
                 G_method = G_method  # Method for calculating soil heat flux
             )
 
-            if update_aerodynamic_states:
-                # Optional PR behavior: refresh aerodynamic state variables each solar iteration.
-                Es_hPa = e0
-                Estar_hPa = e0star
-                phi_Wm2 = Rn_Wm2 - G_Wm2
+        if update_aerodynamic_states:
+            # Refresh aerodynamic state variables each solar/no-solar iteration.
+            Es_hPa = e0
+            Estar_hPa = e0star
+            phi_Wm2 = Rn_Wm2 - G_Wm2
 
         if use_variable_alpha:
             alpha = alphaN
@@ -654,7 +660,7 @@ def STIC_JPL(
         t_et = TicToc()
         t_et.tic()
 
-                # Use new upscaling function from daylight_evapotranspiration
+        # Use new upscaling function from daylight_evapotranspiration
         daylight_results = daylight_ET_from_instantaneous_LE(
             LE_instantaneous_Wm2=LE_Wm2,
             Rn_instantaneous_Wm2=Rn_Wm2,
